@@ -187,6 +187,66 @@ app runs with AI off. Host the server under a BAA when AI is wanted.
 - Will it activate ServiceRequest.Create, or a case request API?
 - Should the app be an activity tab or a toolbar button, and for which roles?
 
+## Surgical team roster
+
+The operating-surgeon list comes from `public/team.json`, which the practice
+edits without touching code:
+
+```json
+{ "members": [
+  { "name": "Jane Smith, MD", "role": "Surgeon", "npi": "1234567890" },
+  { "name": "Ana Lopez, NP", "role": "NP", "npi": "2345678901" }
+] }
+```
+
+- `role` is one of Surgeon, Fellow, Resident, NP or PA. Only Surgeons appear
+  in the operating-surgeon list.
+- `npi` is optional but makes matching exact. Without it, the app matches by
+  name.
+- **Signed-in surgeon or physician:** when the person who launched the app is
+  a Surgeon on the roster, or an MD/DO according to their Epic Practitioner
+  record, they're pre-selected as operating surgeon, marked "(you)". They can
+  pick someone else or type a name.
+- **Signed-in NP or PA:** they're recorded as "requested by" and choose the
+  surgeon.
+- The file is served with the app, so list only names and NPIs, which are
+  public. Commit changes to `main` and Vercel redeploys.
+
+## Live scheduling status
+
+The app asks Epic, rather than keeping its own records, where each request
+stands. It refreshes every minute while open, and right after a request is
+sent:
+
+| Step | Comes from Epic |
+|---|---|
+| Requested | Case request order (ServiceRequest) signed, or the request sent from this app |
+| With scheduler | Order active with no case yet, or a case created but not scheduled (Epic: Pending, Not Scheduled or Missing Information). The scheduler's comment is shown. |
+| Scheduled | Surgery booked in OpTime (Appointment, Scheduled Surgeries): date, time, OR, surgeon, length |
+| Day of surgery / Completed | Arrived / Completed in OpTime |
+| Cancelled | Canceled in OpTime |
+
+**"My cases" board:** every patient on an Epic patient list, with each
+request's status. Your Epic team creates the list, for example a shared
+"Vascular surgery: pending cases" system list or each surgeon's My List, and
+gives you its ID. Set it as `VITE_TRACKING_LIST=urn:oid:<org list OID>|<list
+id>`. The tab appears once it's set.
+
+**Optional:** `VITE_CASE_REQUEST_CATEGORY=<system>|<code>` is your Epic order
+category for case requests. Without it, the app recognizes case request
+orders by their wording or a vascular CPT code.
+
+**Epic APIs to add to the app registration** (add them all in one save):
+- Practitioner.Read (R4)
+- Appointment.Search (Scheduled Surgeries) (R4)
+- Appointment.Read (Scheduled Surgeries) (R4)
+- ServiceRequest.Search (Orders) (R4)
+- List.Search (Patient List) (R4)
+- Coverage.Search (R4)
+
+Your organization may also need to expose case request orders through
+ServiceRequest (Epic's Perioperative Workflows Playbook says so).
+
 ## Resources
 
 - **open.epic MCP server** (`https://mcp.open.epic.com`, no sign-in): it

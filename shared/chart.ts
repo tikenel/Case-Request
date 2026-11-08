@@ -31,6 +31,8 @@ export interface ChartSummary {
   patient: PatientFacts;
   encounterId: string | null;
   user: string | null;
+  /** The signed-in clinician (Practitioner), when Epic shares it. */
+  signedIn: import("./team.js").SignedInUser | null;
   problems: Problem[];
   allergies: Allergy[];
   /** "recorded": real allergies listed; "none known": NKA documented; "not on file": nobody has recorded allergies. */

@@ -8,7 +8,12 @@ import {
   type DatePlan, type PriorAuth, type SurgeryRequest, type Urgency,
 } from "../shared/request";
 import { applySuggestion, defaultAccepted, offlineSuggestion, type Accepted, type Suggestion } from "../shared/suggestion";
-import { aiHeaders, fileNote, loadChart, readNote, sendOrders, WRITE_NOTE, WRITE_ORDERS, type Session } from "./fhir";
+import { defaultPeople, matchMember, surgeonChoices, type TeamMember } from "../shared/team";
+import { formatWhen, stages, type Tracking } from "../shared/tracking";
+import {
+  aiHeaders, fileNote, loadBoard, loadChart, loadTeam, loadTracking, readNote, sendOrders, TRACKING_LIST, WRITE_NOTE, WRITE_ORDERS,
+  type BoardRow, type Session,
+} from "./fhir";
 import { createDictation } from "./speech";
 
 type Config = { ai: boolean; model: string | null; demo: boolean };
@@ -18,13 +23,20 @@ export default function App({ session }: { session: Session }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [config, setConfig] = useState<Config>({ ai: false, model: null, demo: false });
   const [req, setReq] = useState<SurgeryRequest>(() => emptyRequest(null));
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [view, setView] = useState<"patient" | "board">("patient");
+  const [sentAt, setSentAt] = useState<number | null>(null);
 
   useEffect(() => {
     fetch("/api/config").then((r) => r.json()).then(setConfig).catch(() => undefined);
-    loadChart(session)
-      .then((c) => {
+    Promise.all([loadChart(session), loadTeam(session)])
+      .then(([c, t]) => {
         setChart(c);
-        setReq((r) => ({ ...r, surgeon: r.surgeon || c.user || "", requestedBy: r.requestedBy || c.user || "" }));
+        setTeam(t);
+        // Signed-in surgeon (roster) or physician becomes the operating surgeon; APPs pick one.
+        const people = defaultPeople(c.signedIn, t);
+        const fallback = c.signedIn ? "" : c.user ?? "";
+        setReq((r) => ({ ...r, surgeon: r.surgeon || people.surgeon || fallback, requestedBy: r.requestedBy || people.requestedBy || c.user || "" }));
       })
       .catch((e) => setLoadError(e instanceof Error ? e.message : String(e)));
   }, [session]);
@@ -45,16 +57,21 @@ export default function App({ session }: { session: Session }) {
 
   return (
     <div className="app">
-      <Header chart={chart} config={config} demo={session.kind === "demo"} />
+      <Header chart={chart} config={config} demo={session.kind === "demo"} view={view} setView={setView} showBoard={session.kind === "demo" || !!TRACKING_LIST} />
+      {view === "board" ? (
+        <main><Board session={session} /></main>
+      ) : (
       <main>
+        <StatusPanel session={session} patientId={chart.patient.id} sentAt={sentAt} />
         <Describe session={session} chart={chart} config={config} onApply={(s, a) => setReq((r) => applySuggestion(r, s, a))} />
         <Procedures req={req} setReq={setReq} />
         <Diagnoses req={req} setReq={setReq} chart={chart} />
         <Timing req={req} set={set} />
-        <Booking req={req} set={set} />
+        <Booking req={req} set={set} team={team} chart={chart} />
         <Checklist req={req} setReq={setReq} />
-        <Review req={req} chart={chart} session={session} />
+        <Review req={req} chart={chart} session={session} onSent={() => setSentAt(Date.now())} />
       </main>
+      )}
       <footer>{CATALOG_STATUS} The surgeon is responsible for the final request.</footer>
     </div>
   );
@@ -62,7 +79,7 @@ export default function App({ session }: { session: Session }) {
 
 /* ── Header and patient flags ─────────────────────────────────────────── */
 
-function Header({ chart, config, demo }: { chart: ChartSummary; config: Config; demo: boolean }) {
+function Header({ chart, config, demo, view, setView, showBoard }: { chart: ChartSummary; config: Config; demo: boolean; view: "patient" | "board"; setView: (v: "patient" | "board") => void; showBoard: boolean }) {
   const p = chart.patient;
   const anticoag = chart.meds.filter((m) => m.flags.includes("anticoagulant"));
   const antiplatelet = chart.meds.filter((m) => m.flags.includes("antiplatelet"));
@@ -74,6 +91,12 @@ function Header({ chart, config, demo }: { chart: ChartSummary; config: Config; 
         OR <b>Request</b> <span className="sub">Vascular surgery scheduling</span>
         {demo && <span className="pill warn">Demo patient</span>}
         <span className={`pill ${config.ai ? "ok" : ""}`}>{config.ai ? "AI on" : "AI off"}</span>
+        {showBoard && (
+          <span className="seg tabs">
+            <button className={view === "patient" ? "on" : ""} onClick={() => setView("patient")}>This patient</button>
+            <button className={view === "board" ? "on" : ""} onClick={() => setView("board")}>My cases</button>
+          </span>
+        )}
       </div>
       <div className="patient">
         <strong>{p.name}</strong>
@@ -411,8 +434,12 @@ function Timing({ req, set }: { req: SurgeryRequest; set: Setter }) {
 
 /* ── 5. Booking details ───────────────────────────────────────────────── */
 
-function Booking({ req, set }: { req: SurgeryRequest; set: Setter }) {
+function Booking({ req, set, team, chart }: { req: SurgeryRequest; set: Setter; team: TeamMember[]; chart: ChartSummary }) {
   const b = booking(req);
+  const choices = surgeonChoices(chart.signedIn, team);
+  const [other, setOther] = useState(false);
+  const typed = other || (!!req.surgeon && !choices.includes(req.surgeon));
+  const me = matchMember(chart.signedIn, team);
   const pick = <T extends string>(label: string, key: "setting" | "anesthesia" | "admission", options: T[], derived: T) => (
     <div className="field">
       <label>{label}</label>
@@ -430,7 +457,7 @@ function Booking({ req, set }: { req: SurgeryRequest; set: Setter }) {
         {pick<Admission>("After surgery", "admission", ["Outpatient", "Overnight (23 h)", "Inpatient", "ICU"], b.admission)}
         <div className="field">
           <label>Minutes to book</label>
-          <input type="number" min={15} step={15} value={req.minutes ?? ""} placeholder={`${b.minutes} (default)`} onChange={(e) => set("minutes", e.target.value ? Number(e.target.value) : null)} />
+          <input type="number" min={15} step={15} value={req.minutes ?? ""} placeholder={b.minutes ? `${b.minutes} (default)` : "Add a procedure first"} onChange={(e) => set("minutes", e.target.value ? Number(e.target.value) : null)} />
         </div>
         <div className="field">
           <label>Prior authorization</label>
@@ -439,8 +466,16 @@ function Booking({ req, set }: { req: SurgeryRequest; set: Setter }) {
           </select>
         </div>
         <div className="field">
-          <label>Surgeon</label>
-          <input value={req.surgeon} onChange={(e) => set("surgeon", e.target.value)} />
+          <label>Operating surgeon</label>
+          {choices.length > 0 && (
+            <select value={typed ? "__other" : req.surgeon} onChange={(e) => { const v = e.target.value; setOther(v === "__other"); set("surgeon", v === "__other" ? "" : v); }}>
+              <option value="">Choose the surgeon…</option>
+              {choices.map((n) => <option key={n} value={n}>{n}{chart.signedIn && n === (me?.name ?? chart.signedIn.name) ? " (you)" : ""}</option>)}
+              <option value="__other">Other (type a name)…</option>
+            </select>
+          )}
+          {(typed || choices.length === 0) && <input value={req.surgeon} onChange={(e) => set("surgeon", e.target.value)} placeholder="Surgeon's name" />}
+          {req.requestedBy && req.requestedBy !== req.surgeon && <p className="hint">Requested by {req.requestedBy}{me && me.role !== "Surgeon" ? ` (${me.role})` : ""}</p>}
         </div>
       </div>
       {b.equipment.length > 0 && (
@@ -493,7 +528,7 @@ function Checklist({ req, setReq }: { req: SurgeryRequest; setReq: React.Dispatc
 
 /* ── 7. Review and send ───────────────────────────────────────────────── */
 
-function Review({ req, chart, session }: { req: SurgeryRequest; chart: ChartSummary; session: Session }) {
+function Review({ req, chart, session, onSent }: { req: SurgeryRequest; chart: ChartSummary; session: Session; onSent: () => void }) {
   const issues = validate(req);
   const errors = issues.filter((i) => i.level === "error");
   const packet = schedulerPacket(req, chart);
@@ -505,6 +540,7 @@ function Review({ req, chart, session }: { req: SurgeryRequest; chart: ChartSumm
     try {
       await fn();
       setStatus(`${label}: done.`);
+      onSent();
     } catch (e) {
       setStatus(`${label} failed: ${e instanceof Error ? e.message : String(e)}`);
     }
@@ -536,5 +572,111 @@ function Review({ req, chart, session }: { req: SurgeryRequest; chart: ChartSumm
       </div>
       {status && <p className="busy">{status}</p>}
     </Section>
+  );
+}
+
+/* ── Scheduling status (live from Epic) ──────────────────────────────── */
+
+const REFRESH_MS = 60_000;
+
+/** Re-runs `load` every minute while the page is visible, and when `trigger` changes. */
+function usePolling<T>(load: () => Promise<T>, trigger: unknown) {
+  const [data, setData] = useState<T | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [at, setAt] = useState<Date | null>(null);
+  const [busy, setBusy] = useState(false);
+  const run = useRef(load);
+  run.current = load;
+  const refresh = async () => {
+    setBusy(true);
+    try {
+      setData(await run.current());
+      setError(null);
+      setAt(new Date());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  useEffect(() => {
+    void refresh();
+    const t = setInterval(() => { if (document.visibilityState === "visible") void refresh(); }, REFRESH_MS);
+    return () => clearInterval(t);
+  }, [trigger]); // eslint-disable-line react-hooks/exhaustive-deps
+  return { data, error, at, busy, refresh };
+}
+
+function Updated({ at, busy, refresh, demo }: { at: Date | null; busy: boolean; refresh: () => void; demo: boolean }) {
+  return (
+    <span className="updated">
+      {busy ? "Checking Epic…" : demo ? "Demo data (not from Epic)" : at ? `Live from Epic · updated ${at.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : ""}
+      <button onClick={refresh} disabled={busy}>Refresh</button>
+    </span>
+  );
+}
+
+function Stages({ t, sentHere }: { t: Tracking; sentHere: boolean }) {
+  const s = stages(t, sentHere);
+  return (
+    <>
+      {s.cancelled && <p className="error">Cancelled in Epic: {s.cancelled.description}{s.cancelled.comment ? ` · “${s.cancelled.comment}”` : ""}</p>}
+      <ol className="stages">
+        {s.stages.map((st) => (
+          <li key={st.key} className={st.state}>
+            <span className="dot" />
+            <b>{st.label}</b>
+            {st.detail && <span className="muted">{st.detail}</span>}
+          </li>
+        ))}
+      </ol>
+    </>
+  );
+}
+
+function StatusPanel({ session, patientId, sentAt }: { session: Session; patientId: string; sentAt: number | null }) {
+  const { data, error, at, busy, refresh } = usePolling(() => loadTracking(session, patientId), `${patientId}:${sentAt}`);
+  return (
+    <section className="status">
+      <h2><span className="n">●</span>Scheduling status <Updated at={at} busy={busy} refresh={refresh} demo={session.kind === "demo"} /></h2>
+      {error && <p className="warn">{error}</p>}
+      {data && <Stages t={data} sentHere={sentAt !== null} />}
+    </section>
+  );
+}
+
+function Board({ session }: { session: Session }) {
+  const { data, error, at, busy, refresh } = usePolling(() => loadBoard(session), "board");
+  return (
+    <section>
+      <h2>My cases <Updated at={at} busy={busy} refresh={refresh} demo={session.kind === "demo"} /></h2>
+      <p className="hint">Patients on {session.kind === "demo" ? "the demo list" : "your Epic patient list"}, with where each request is in scheduling. Updates every minute.</p>
+      {error && <p className="warn">{error}</p>}
+      {data && data.length === 0 && <p className="muted">No patients on the list.</p>}
+      {data && data.length > 0 && (
+        <table className="board">
+          <thead><tr><th>Patient</th><th>Status</th><th>Surgery</th></tr></thead>
+          <tbody>
+            {data.map((row: BoardRow) => {
+              const s = row.tracking ? stages(row.tracking, false) : null;
+              const current = s?.stages.find((x) => x.state === "current");
+              const surgery = row.tracking?.surgeries[0];
+              return (
+                <tr key={row.id}>
+                  <td><b>{row.name || row.id}</b></td>
+                  <td>
+                    {row.error ? <span className="warn">{row.error}</span> : (
+                      <span className={`chip-status ${s?.cancelled ? "cancelled" : current?.key ?? "none"}`}>{s?.summary}</span>
+                    )}
+                    {current?.detail && current.key !== "scheduled" && <div className="muted small">{current.detail}</div>}
+                  </td>
+                  <td className="small">{surgery ? <>{surgery.description}{surgery.start ? <div className="muted">{formatWhen(surgery.start)}{surgery.location ? ` · ${surgery.location}` : ""}</div> : null}</> : <span className="muted">—</span>}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+    </section>
   );
 }

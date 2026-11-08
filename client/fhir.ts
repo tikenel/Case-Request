@@ -6,13 +6,20 @@ import {
   allergies, allergyStatus, bestAttachment, coverage, labs, LAB_CODES, medications, noteRefs, noteText, patientFacts, problems,
   resourcesOf, type ChartSummary, type FhirResource, type NoteRef,
 } from "../shared/chart";
-import { DEMO_CHART, DEMO_NOTE } from "../shared/demo";
+import { DEMO_BOARD, DEMO_CHART, DEMO_NOTE, DEMO_TEAM, DEMO_TRACKING } from "../shared/demo";
+import { parseTeam, userFromPractitioner, type TeamMember } from "../shared/team";
+import { caseRequests, listPatients, surgeries, type Tracking } from "../shared/tracking";
 import { noteResource, serviceRequests, type NoteType } from "../shared/fhirOut";
 import type { SurgeryRequest } from "../shared/request";
 
 export const SCOPES =
   import.meta.env.VITE_SMART_SCOPES ||
-  "launch openid fhirUser patient/Patient.read patient/Condition.read patient/MedicationRequest.read patient/AllergyIntolerance.read patient/Observation.read patient/Coverage.read patient/DocumentReference.read patient/Binary.read patient/Encounter.read";
+  "launch openid fhirUser patient/Patient.read patient/Condition.read patient/MedicationRequest.read patient/AllergyIntolerance.read patient/Observation.read patient/Coverage.read patient/DocumentReference.read patient/Binary.read patient/Encounter.read patient/Appointment.read patient/ServiceRequest.read user/Practitioner.read user/Patient.read user/Appointment.read user/ServiceRequest.read user/List.read";
+
+/** Epic order category code for case requests (organization-specific). Unset: matched by wording or vascular CPT. */
+const CASE_REQUEST_CATEGORY = import.meta.env.VITE_CASE_REQUEST_CATEGORY || undefined;
+/** Epic patient list for the "My cases" board, as system|id (organization-specific). */
+export const TRACKING_LIST = import.meta.env.VITE_TRACKING_LIST || "";
 
 export const WRITE_NOTE = import.meta.env.VITE_WRITE_NOTE === "1";
 export const WRITE_ORDERS = import.meta.env.VITE_WRITE_ORDERS === "1";
@@ -101,7 +108,8 @@ export async function loadChart(s: Session): Promise<ChartSummary> {
   return {
     patient: patientFacts(patient as unknown as FhirResource),
     encounterId: c.encounter.id ?? null,
-    user: personName(user),
+    user: userFromPractitioner(user)?.name ?? personName(user),
+    signedIn: userFromPractitioner(user),
     problems: problems(conds),
     allergies: allergies(alls),
     allergyStatus: allergyStatus(alls),
@@ -147,4 +155,48 @@ export async function sendOrders(s: Session, req: SurgeryRequest, chart: ChartSu
   if (s.kind === "demo") return requisition;
   for (const sr of serviceRequests(req, chart, requisition)) await s.client.create(sr as never);
   return requisition;
+}
+
+/** The practice's roster from team.json; the demo roster when it's empty in demo mode. */
+export async function loadTeam(s: Session): Promise<TeamMember[]> {
+  let team: TeamMember[] = [];
+  try {
+    const res = await fetch("./team.json", { cache: "no-store" });
+    if (res.ok) team = parseTeam(await res.json());
+  } catch { /* no roster file */ }
+  return team.length || s.kind !== "demo" ? team : DEMO_TEAM;
+}
+
+/** Case request orders and scheduled surgeries for one patient, straight from Epic. */
+export async function loadTracking(s: Session, patientId: string): Promise<Tracking> {
+  if (s.kind === "demo") return DEMO_BOARD.find((p) => p.id === patientId)?.tracking ?? DEMO_TRACKING;
+  const c = s.client;
+  const pid = encodeURIComponent(patientId);
+  const [orders, cases] = await Promise.all([
+    c.request<unknown>(`ServiceRequest?patient=${pid}${CASE_REQUEST_CATEGORY ? `&category=${encodeURIComponent(CASE_REQUEST_CATEGORY)}` : ""}`).catch(() => null),
+    c.request<unknown>(`Appointment?patient=${pid}&service-category=surgery`).catch(() => null),
+  ]);
+  if (orders === null && cases === null) throw new Error("Epic didn't return scheduling information. The app may need the Appointment and ServiceRequest APIs added.");
+  return { caseRequests: caseRequests(orders, CASE_REQUEST_CATEGORY?.split("|").pop()), surgeries: surgeries(cases) };
+}
+
+export interface BoardRow { id: string; name: string; tracking: Tracking | null; error: string | null }
+
+/** Every patient on the configured Epic patient list, with their scheduling status. */
+export async function loadBoard(s: Session): Promise<BoardRow[]> {
+  if (s.kind === "demo") return DEMO_BOARD.map((p) => ({ ...p, error: null }));
+  if (!TRACKING_LIST) return [];
+  const list = await s.client.request<unknown>(`List?code=patients&identifier=${encodeURIComponent(TRACKING_LIST)}`);
+  const patients = listPatients(list).slice(0, 40);
+  const rows: BoardRow[] = [];
+  for (let i = 0; i < patients.length; i += 4) {
+    rows.push(...(await Promise.all(patients.slice(i, i + 4).map(async (p) => {
+      try {
+        return { ...p, tracking: await loadTracking(s, p.id), error: null };
+      } catch (e) {
+        return { ...p, tracking: null, error: e instanceof Error ? e.message : String(e) };
+      }
+    }))));
+  }
+  return rows;
 }

@@ -1,0 +1,259 @@
+{
+ "resourceType": "Bundle",
+ "type": "searchset",
+ "total": 1,
+ "link": [
+  {
+   "relation": "self",
+   "url": "https://hostname/instance/api/FHIR/R4/Appointment?patient=eUzI-RPN31f14l7ONMTFzaKlVlo9oMKFk3sePNLooHBA3&service-category=surgery"
+  }
+ ],
+ "entry": [
+  {
+   "link": [
+    {
+     "relation": "self",
+     "url": "https://hostname/instance/api/FHIR/R4/Appointment/e7F0qvjzY3rO5LzUraEBD1A3"
+    }
+   ],
+   "fullUrl": "https://hostname/instance/api/FHIR/R4/Appointment/e7F0qvjzY3rO5LzUraEBD1A3",
+   "resource": {
+    "resourceType": "Appointment",
+    "id": "e7F0qvjzY3rO5LzUraEBD1A3",
+    "identifier": [
+     {
+      "use": "usual",
+      "type": {
+       "text": "ORC"
+      },
+      "system": "urn:oid:1.2.840.114350.1.13.5325.1.7.2.798267",
+      "value": "418188"
+     }
+    ],
+    "status": "booked",
+    "serviceCategory": [
+     {
+      "coding": [
+       {
+        "system": "http://open.epic.com/FHIR/StructureDefinition/appointment-service-category",
+        "code": "surgery",
+        "display": "Surgery"
+       }
+      ],
+      "text": "surgery"
+     }
+    ],
+    "specialty": [
+     {
+      "coding": [
+       {
+        "system": "urn:oid:1.2.840.114350.1.13.5325.1.7.4.836982.5030",
+        "code": "110",
+        "display": "General"
+       }
+      ],
+      "text": "General"
+     }
+    ],
+    "reasonCode": [
+     {
+      "coding": [
+       {
+        "system": "http://snomed.info/sct",
+        "code": "196781001",
+        "display": "Acute appendicitis with peritonitis (disorder)"
+       }
+      ],
+      "text": "Acute appendicitis with peritonitis (disorder)"
+     }
+    ],
+    "description": "APPENDECTOMY OPEN [44950 (CPT\u00ae)] with Hanson, Steven in MMD East OR at  7:00 AM on 2/9/2022",
+    "start": "2022-02-08T20:00:00Z",
+    "end": "2022-02-08T22:00:00Z",
+    "minutesDuration": 120,
+    "created": "2022-02-02",
+    "comment": "Schedule at the first case of the day.\\r\\n",
+    "patientInstruction": "Patient should not eat or drink after midnight prior to day of surgery.\r\nPlease arrange travel plans to/from the hospital.  Do not forget to bring\r\nany medications you are currently taking.  Please leave any valuables at\r\nhome or with someone for safekeeping.\r\n",
+    "participant": [
+     {
+      "type": [
+       {
+        "coding": [
+         {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+          "code": "PART",
+          "display": "Participation"
+         }
+        ],
+        "text": "PART"
+       }
+      ],
+      "actor": {
+       "reference": "Patient/eUzI-RPN31f14l7ONMTFzaKlVlo9oMKFk3sePNLooHBA3",
+       "display": "Bennett, Edgar"
+      },
+      "required": "required",
+      "status": "accepted",
+      "period": {
+       "start": "2022-02-08T20:00:00Z",
+       "end": "2022-02-08T22:00:00Z"
+      }
+     },
+     {
+      "type": [
+       {
+        "coding": [
+         {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+          "code": "PPRF",
+          "display": "primary performer"
+         }
+        ],
+        "text": "PPRF"
+       }
+      ],
+      "actor": {
+       "reference": "Practitioner/eNb.8WB1163dZHCD5WSpXGQ3",
+       "display": "Steven Hanson"
+      },
+      "required": "required",
+      "status": "accepted",
+      "period": {
+       "start": "2022-02-08T20:15:00Z",
+       "end": "2022-02-08T21:50:00Z"
+      }
+     },
+     {
+      "type": [
+       {
+        "coding": [
+         {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+          "code": "PART",
+          "display": "Participation"
+         }
+        ],
+        "text": "PART"
+       }
+      ],
+      "actor": {
+       "reference": "Location/eNvgllF6SIj07NXjl8ww8nw3",
+       "display": "Mmd East Or"
+      },
+      "required": "required",
+      "status": "accepted",
+      "period": {
+       "start": "2022-02-08T20:00:00Z",
+       "end": "2022-02-08T22:00:00Z"
+      }
+     },
+     {
+      "type": [
+       {
+        "coding": [
+         {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+          "code": "SPRF",
+          "display": "secondary performer"
+         }
+        ],
+        "text": "SPRF"
+       }
+      ],
+      "actor": {
+       "reference": "Practitioner/e5QKlsvlrLviW4IcugVAxxA3",
+       "display": "Circulator Anderson"
+      },
+      "required": "required",
+      "status": "accepted",
+      "period": {
+       "start": "2022-02-08T20:00:00Z",
+       "end": "2022-02-08T22:00:00Z"
+      }
+     },
+     {
+      "type": [
+       {
+        "coding": [
+         {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+          "code": "SPRF",
+          "display": "secondary performer"
+         }
+        ],
+        "text": "SPRF"
+       }
+      ],
+      "actor": {
+       "reference": "Practitioner/eSLiMCyhfpHC-4zQUgTR9UQ3",
+       "display": "Scrub Kennedy"
+      },
+      "required": "required",
+      "status": "accepted",
+      "period": {
+       "start": "2022-02-08T20:00:00Z",
+       "end": "2022-02-08T22:00:00Z"
+      }
+     },
+     {
+      "type": [
+       {
+        "coding": [
+         {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+          "code": "SPRF",
+          "display": "secondary performer"
+         }
+        ],
+        "text": "SPRF"
+       }
+      ],
+      "actor": {
+       "reference": "Practitioner/eUAxZ5XXMnRkePszqD0W5xA3",
+       "display": "Anesthesiologist Anesthesia, MD"
+      },
+      "required": "required",
+      "status": "accepted",
+      "period": {
+       "start": "2022-02-08T20:00:00Z",
+       "end": "2022-02-08T22:00:00Z"
+      }
+     },
+     {
+      "type": [
+       {
+        "coding": [
+         {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+          "code": "PART",
+          "display": "Participation"
+         }
+        ],
+        "text": "PART"
+       }
+      ],
+      "actor": {
+       "reference": "Location/elxd-pgW0IoEzZEZd0Ifl2Q3",
+       "display": "MMD EAST OR 1"
+      },
+      "required": "required",
+      "status": "accepted",
+      "period": {
+       "start": "2022-02-08T20:00:00Z",
+       "end": "2022-02-08T22:00:00Z"
+      }
+     }
+    ],
+    "requestedPeriod": [
+     {
+      "start": "2022-02-03T21:30:00Z",
+      "end": "2022-02-03T23:30:00Z"
+     }
+    ]
+   },
+   "search": {
+    "mode": "match"
+   }
+  }
+ ]
+}

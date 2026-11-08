@@ -1,5 +1,7 @@
 // A made-up patient for trying the app without Epic (?demo=1). No real data.
 import type { ChartSummary } from "./chart.js";
+import type { TeamMember } from "./team.js";
+import type { Tracking } from "./tracking.js";
 
 export const DEMO_NOTE = `VASCULAR SURGERY CLINIC NOTE
 
@@ -17,6 +19,7 @@ export const DEMO_CHART: ChartSummary = {
   patient: { id: "demo-patient", name: "Test Patient (demo)", mrn: "DEMO0001", birthDate: "1955-03-14", age: 71, sex: "male", phone: "555-0100" },
   encounterId: "demo-encounter",
   user: "Demo Surgeon, MD",
+  signedIn: { name: "Demo Surgeon, MD", fhirId: "demo-practitioner", npi: "1000000001", credentials: ["MD"], isPhysician: true },
   problems: [
     { code: "I70.221", system: "http://hl7.org/fhir/sid/icd-10-cm", display: "Atherosclerosis of native arteries of right leg with rest pain" },
     { code: "I48.91", system: "http://hl7.org/fhir/sid/icd-10-cm", display: "Atrial fibrillation" },
@@ -41,3 +44,24 @@ export const DEMO_CHART: ChartSummary = {
   coverage: [{ payer: "Demo Medicare Advantage", memberId: "XYZ123456", plan: "PPO" }],
   notes: [{ id: "demo-note", title: "Vascular surgery clinic note", date: "2026-11-05", author: "Demo Surgeon, MD", attachments: [{ url: "demo", contentType: "text/plain" }] }],
 };
+
+/** Used in demo mode when public/team.json has no members yet. Made-up names. */
+export const DEMO_TEAM: TeamMember[] = [
+  { name: "Demo Surgeon, MD", role: "Surgeon", npi: "1000000001" },
+  { name: "Second Surgeon, MD", role: "Surgeon", npi: "1000000002" },
+  { name: "Third Surgeon, DO", role: "Surgeon", npi: "1000000003" },
+  { name: "Demo Practitioner, NP", role: "NP", npi: "1000000004" },
+];
+
+/** A case partway through scheduling: order signed, case created, not yet on the schedule. */
+export const DEMO_TRACKING: Tracking = {
+  caseRequests: [{ id: "demo-order", status: "active", title: "CASE REQUEST: VASCULAR SURGERY", authoredOn: "2026-11-06T15:12:00Z", requester: "Demo Surgeon, MD" }],
+  surgeries: [{ id: "demo-case", status: "proposed", description: "FEMORAL-POPLITEAL BYPASS [35656 (CPT®)] with Demo Surgeon, MD", start: null, end: null, minutes: 180, surgeon: "Demo Surgeon, MD", location: null, comment: "Waiting on cardiology clearance", created: "2026-11-07" }],
+};
+
+/** Patients for the demo "My cases" board. */
+export const DEMO_BOARD: { id: string; name: string; tracking: Tracking }[] = [
+  { id: "demo-patient", name: "Test Patient (demo)", tracking: DEMO_TRACKING },
+  { id: "demo-2", name: "Second Patient (demo)", tracking: { caseRequests: [{ id: "o2", status: "active", title: "CASE REQUEST: VASCULAR SURGERY", authoredOn: "2026-11-02T14:00:00Z", requester: "Demo Surgeon, MD" }], surgeries: [{ id: "c2", status: "booked", description: "CAROTID ENDARTERECTOMY [35301 (CPT®)] with Demo Surgeon, MD", start: "2026-11-18T13:30:00Z", end: "2026-11-18T16:00:00Z", minutes: 150, surgeon: "Demo Surgeon, MD", location: "Main OR 4", comment: null, created: "2026-11-03" }] } },
+  { id: "demo-3", name: "Third Patient (demo)", tracking: { caseRequests: [{ id: "o3", status: "active", title: "CASE REQUEST: VASCULAR SURGERY", authoredOn: "2026-11-07T19:40:00Z", requester: "Demo Practitioner, NP" }], surgeries: [] } },
+];
