@@ -86,6 +86,7 @@ function Header({ chart, config, demo }: { chart: ChartSummary; config: Config; 
         {anticoag.length > 0 && <span className="flag red">Anticoagulant: {anticoag.map((m) => m.display).join(", ")}</span>}
         {antiplatelet.length > 0 && <span className="flag amber">Antiplatelet: {antiplatelet.map((m) => m.display).join(", ")}</span>}
         {contrast.length > 0 && <span className="flag red">Contrast allergy</span>}
+        {chart.allergyStatus === "not on file" && <span className="flag amber">Allergies not on file</span>}
         {egfr && <span className={`flag ${egfr.value < 45 ? "amber" : ""}`}>eGFR {egfr.value}{egfr.date ? ` (${egfr.date.slice(0, 10)})` : ""}</span>}
         {chart.labs.inr && <span className="flag">INR {chart.labs.inr.value}</span>}
       </div>

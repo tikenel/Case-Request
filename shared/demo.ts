@@ -24,6 +24,7 @@ export const DEMO_CHART: ChartSummary = {
     { code: "E11.51", system: "http://hl7.org/fhir/sid/icd-10-cm", display: "Type 2 diabetes with peripheral angiopathy" },
   ],
   allergies: [{ display: "Iodinated contrast media", contrast: true }],
+  allergyStatus: "recorded",
   meds: [
     { display: "apixaban 5 mg tablet", flags: ["anticoagulant"] },
     { display: "aspirin 81 mg tablet", flags: ["antiplatelet"] },

@@ -3,7 +3,7 @@
 import FHIR from "fhirclient";
 import type Client from "fhirclient/lib/Client";
 import {
-  allergies, bestAttachment, coverage, labs, LAB_CODES, medications, noteRefs, noteText, patientFacts, problems,
+  allergies, allergyStatus, bestAttachment, coverage, labs, LAB_CODES, medications, noteRefs, noteText, patientFacts, problems,
   resourcesOf, type ChartSummary, type FhirResource, type NoteRef,
 } from "../shared/chart";
 import { DEMO_CHART, DEMO_NOTE } from "../shared/demo";
@@ -104,6 +104,7 @@ export async function loadChart(s: Session): Promise<ChartSummary> {
     user: personName(user),
     problems: problems(conds),
     allergies: allergies(alls),
+    allergyStatus: allergyStatus(alls),
     meds: medications(meds),
     labs: labs(obs),
     coverage: coverage(cov),

@@ -19,6 +19,7 @@ export interface PatientFacts {
 }
 export interface Problem { code: string | null; system: string | null; display: string }
 export interface Allergy { display: string; contrast: boolean }
+export type AllergyStatus = "recorded" | "none known" | "not on file";
 export type MedFlag = "anticoagulant" | "antiplatelet" | "sglt2" | "glp1" | "metformin" | "insulin";
 export interface Med { display: string; flags: MedFlag[] }
 export interface Lab { value: number; unit: string; date: string | null }
@@ -32,6 +33,8 @@ export interface ChartSummary {
   user: string | null;
   problems: Problem[];
   allergies: Allergy[];
+  /** "recorded": real allergies listed; "none known": NKA documented; "not on file": nobody has recorded allergies. */
+  allergyStatus: AllergyStatus;
   meds: Med[];
   labs: Labs;
   coverage: CoverageFact[];
@@ -95,15 +98,34 @@ export function problems(conditions: FhirResource[]): Problem[] {
 }
 
 const CONTRAST = /contrast|iodin|iohexol|iopamidol|iodixanol|ioversol|omnipaque|isovue|visipaque|optiray|gadolin/i;
+// Epic files placeholder records instead of leaving the list empty: "Not on File"
+// (SNOMED 1631000175102, patient not asked) and no-known-allergy statements.
+const NOT_ASKED = { codes: ["1631000175102"], text: /^not on file$|not asked/i };
+const NONE_KNOWN = { codes: ["716186003", "409137002", "428607008", "429625007"], text: /^(no known|nka\b|nkda\b|no allergies)/i };
+
+function activeAllergies(list: FhirResource[]) {
+  return list.filter((a) => {
+    const s = conceptText(a.clinicalStatus).toLowerCase();
+    const v = conceptText(a.verificationStatus).toLowerCase();
+    return (!s || s === "active") && v !== "entered-in-error" && v !== "refuted";
+  });
+}
+const matches = (a: FhirResource, rule: { codes: string[]; text: RegExp }) =>
+  ((obj(a.code) as CodeableConcept).coding ?? []).some((c) => c.code && rule.codes.includes(c.code)) || rule.text.test(conceptText(a.code));
+
 export function allergies(list: FhirResource[]): Allergy[] {
-  return list
-    .filter((a) => {
-      const s = conceptText(a.clinicalStatus).toLowerCase();
-      return !s || s === "active";
-    })
+  return activeAllergies(list)
+    .filter((a) => !matches(a, NOT_ASKED) && !matches(a, NONE_KNOWN))
     .map((a) => conceptText(a.code))
     .filter(Boolean)
     .map((display) => ({ display, contrast: CONTRAST.test(display) }));
+}
+
+export function allergyStatus(list: FhirResource[]): AllergyStatus {
+  const active = activeAllergies(list);
+  if (active.some((a) => !matches(a, NOT_ASKED) && !matches(a, NONE_KNOWN))) return "recorded";
+  if (active.some((a) => matches(a, NONE_KNOWN))) return "none known";
+  return "not on file";
 }
 
 const MED_RULES: [MedFlag, RegExp][] = [

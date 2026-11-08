@@ -139,6 +139,7 @@ export function checklistFor(req: SurgeryRequest, chart: ChartSummary | null): C
     else if (egfr < 45) add("renal", "Renal protection plan for contrast (hydration, limit contrast, CO2 if available)", `eGFR ${egfr}. Contrast case.`);
     if (chart?.allergies.some((a) => a.contrast)) add("contrast-allergy", "Contrast allergy premedication protocol ordered", `Allergy on file: ${chart.allergies.filter((a) => a.contrast).map((a) => a.display).join(", ")}.`);
   }
+  if (chart?.allergyStatus === "not on file") add("allergy-history", "Allergy history taken and entered in the chart", "The chart says allergies are not on file.");
   if (b.anesthesia === "General" || b.anesthesia === "Regional") add("anesthesia", "Pre-anesthesia evaluation booked", `${b.anesthesia} anesthesia.`);
   if (b.admission === "Inpatient" || b.admission === "ICU") add("medical", "Medical/cardiac risk assessment if indicated", `${b.admission} case.`);
   if (b.blood !== "None") add("blood", `${b.blood} within the blood bank window`, "Blood bank sample usually expires 72 h before the case.");

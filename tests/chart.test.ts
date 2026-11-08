@@ -62,3 +62,20 @@ describe("chart parsing", () => {
     expect(noteText("text/plain", "  x  ")).toBe("x");
   });
 });
+
+describe("Epic allergy placeholders", () => {
+  // Shapes copied from Epic sandbox responses (test patient Omar Optime).
+  const notOnFile = { resourceType: "AllergyIntolerance", clinicalStatus: { coding: [{ code: "active", display: "Active" }] }, verificationStatus: { coding: [{ code: "unconfirmed", display: "Unconfirmed" }] }, code: { coding: [{ system: "http://snomed.info/sct", code: "1631000175102", display: "Patient not asked" }], text: "Not on File" } };
+  const nka = { resourceType: "AllergyIntolerance", clinicalStatus: { coding: [{ code: "active" }] }, code: { coding: [{ system: "http://snomed.info/sct", code: "716186003" }], text: "No Known Allergies" } };
+  const pcn = { resourceType: "AllergyIntolerance", clinicalStatus: { coding: [{ code: "active" }] }, code: { text: "Penicillins" } };
+  it("doesn't list placeholders as allergies and reports the status", async () => {
+    const { allergies, allergyStatus } = await import("../shared/chart");
+    expect(allergies([notOnFile])).toEqual([]);
+    expect(allergyStatus([notOnFile])).toBe("not on file");
+    expect(allergyStatus([])).toBe("not on file");
+    expect(allergies([nka])).toEqual([]);
+    expect(allergyStatus([nka])).toBe("none known");
+    expect(allergies([nka, pcn])).toEqual([{ display: "Penicillins", contrast: false }]);
+    expect(allergyStatus([pcn])).toBe("recorded");
+  });
+});
