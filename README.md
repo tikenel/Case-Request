@@ -4,9 +4,6 @@ A SMART on FHIR app that opens inside the patient's chart in Epic. The surgeon
 or NP/PA builds a complete surgery request in about a minute. The scheduler
 then gets a step-by-step sheet with nothing missing.
 
-It's separate from CasePlan and from the patient site. Nothing here is part of
-the Vercel deploy.
-
 ## The problem it targets
 
 Requests reach new schedulers incomplete: no side, no CPT code, no equipment,
