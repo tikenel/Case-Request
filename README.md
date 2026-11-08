@@ -187,6 +187,41 @@ app runs with AI off. Host the server under a BAA when AI is wanted.
 - Will it activate ServiceRequest.Create, or a case request API?
 - Should the app be an activity tab or a toolbar button, and for which roles?
 
+## Resources
+
+- **open.epic MCP server** (`https://mcp.open.epic.com`, no sign-in): it
+  searches Epic's interoperability documentation (Epic on FHIR, open.epic,
+  Showroom) from an AI assistant. It's configured in `.mcp.json`, so Claude Code
+  sessions on this repository load it. In claude.ai, add it as a custom
+  connector. It only reads documentation; it never touches patient data.
+- **Epic on FHIR sandbox:**
+  `https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4`. The test data
+  is under Documentation → Sandbox Test Data.
+- **Launch simulator** (signed in to fhir.epic.com): Documentation → Launching
+  Your App. It opens the app as if from a patient's chart, with no test-user
+  login.
+
+### What Epic's documentation says about case requests
+
+From Epic's Perioperative Workflows Playbook and API specifications (found
+through the MCP server):
+
+- **Case request orders** are how surgeons ask OR schedulers to add a case.
+  Apps can *read* them through ServiceRequest (Orders), identified by category.
+  The organization may need extra setup to expose them. Outgoing Surgical Case
+  Scheduling (SIU) HL7v2 messages can also send them out when signed.
+- **Creating an order** for the surgeon to sign: CDS Hooks
+  ServiceRequest.Create (Unsigned Order) adds unsigned procedure orders. It is
+  only for CDS Hooks integrations. This is the likely route to a real case
+  request order that the surgeon signs in Epic, so the request lands in the
+  schedulers' normal workflow.
+- **Status after booking:** Appointment.Read (Scheduled Surgeries) returns
+  cases scheduled in OpTime, with times, procedure and staff. That lets the app
+  show "requested → scheduled" without keeping its own database.
+- **Filing the scheduler sheet as a note:** DocumentReference.Create (Clinical
+  Notes) files a plain-text note to an open or closed encounter. That matches
+  the app's optional "File note in Epic".
+
 ## Toward automation
 
 The request is already structured data (`SurgeryRequest`), so later steps can
