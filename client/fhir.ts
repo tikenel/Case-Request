@@ -26,7 +26,11 @@ const NOTE_TYPE: NoteType = {
 export function authorize() {
   const clientId = import.meta.env.VITE_SMART_CLIENT_ID;
   if (!clientId) throw new Error("VITE_SMART_CLIENT_ID is not set. Register the app at fhir.epic.com and rebuild.");
-  return FHIR.oauth2.authorize({ clientId, scope: SCOPES, redirectUri: "./index.html", pkceMode: "ifSupported" });
+  // "launch" is only valid when Epic opened the app from a chart (it passes ?launch=...).
+  // A standalone sign-in without it gets "Invalid OAuth 2.0 request", so drop it there.
+  const fromChart = new URLSearchParams(location.search).has("launch");
+  const scope = fromChart ? SCOPES : SCOPES.split(/\s+/).filter((s) => s !== "launch").join(" ");
+  return FHIR.oauth2.authorize({ clientId, scope, redirectUri: "./index.html", pkceMode: "ifSupported" });
 }
 
 /** patientId is the chart's patient, or a test patient picked when Epic opened the app without one. */
