@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OR Request: documentation</title>
+    <style>
+      body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; color: #1d2733; background: #f4f6f9; margin: 0; line-height: 1.55; }
+      main { max-width: 760px; margin: 0 auto; padding: 32px 16px 48px; }
+      h1 { font-size: 26px; margin: 0 0 4px; } h1 b { color: #1f5fa8; }
+      h2 { font-size: 18px; margin: 28px 0 8px; }
+      .lede { color: #66727f; margin-top: 0; }
+      section { background: #fff; border: 1px solid #dde3ea; border-radius: 10px; padding: 4px 20px 12px; margin-top: 16px; }
+      table { border-collapse: collapse; width: 100%; font-size: 14px; }
+      td, th { text-align: left; border-top: 1px solid #dde3ea; padding: 6px 8px 6px 0; vertical-align: top; }
+      code { font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+      footer { color: #66727f; font-size: 13px; margin-top: 24px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>OR <b>Request</b></h1>
+      <p class="lede">Vascular surgery scheduling requests, built from the patient's chart in Epic.</p>
+
+      <section>
+        <h2>What it does</h2>
+        <p>OR Request is a SMART on FHIR app that vascular surgeons and their nurse practitioners and physician assistants open from the patient's chart. They describe the planned case by typing, dictating, or choosing their clinic note. The app turns that into a complete surgery scheduling request: procedures with side and CPT code, diagnosis, urgency and requested dates, room, anesthesia, case length, equipment and vendor needs, prior authorization status, and a pre-operative checklist built from the chart.</p>
+        <p>It will not produce a request with missing essentials (side, diagnosis, dates, anticoagulation plan). The result is a numbered instruction sheet for the scheduler, which the clinician copies, prints, or files in Epic where the organization enables it.</p>
+      </section>
+
+      <section>
+        <h2>Who uses it</h2>
+        <p>Clinicians (vascular surgeons, NPs and PAs) launch it inside Epic Hyperspace or Hyperdrive in the context of a patient. Schedulers receive its output. Patients do not use it.</p>
+      </section>
+
+      <section>
+        <h2>Data it reads</h2>
+        <p>Only for the patient open in the chart, and only while the app is open:</p>
+        <table>
+          <tr><th>FHIR resource</th><th>Why</th></tr>
+          <tr><td>Patient</td><td>Name, MRN, date of birth and phone on the scheduler sheet</td></tr>
+          <tr><td>Condition (problem list)</td><td>Diagnosis selection</td></tr>
+          <tr><td>MedicationRequest</td><td>Flags anticoagulants, antiplatelets and diabetes medications needing a pre-op plan</td></tr>
+          <tr><td>AllergyIntolerance</td><td>Flags contrast allergy for contrast cases</td></tr>
+          <tr><td>Observation (labs)</td><td>Recent eGFR, creatinine, INR, hemoglobin, platelets, potassium, A1c</td></tr>
+          <tr><td>Coverage</td><td>Payer and member ID for prior authorization</td></tr>
+          <tr><td>DocumentReference, Binary (clinical notes)</td><td>Lets the clinician choose a note to read the surgical plan from</td></tr>
+          <tr><td>Encounter</td><td>Links any filed note to the current encounter</td></tr>
+        </table>
+        <p>Optional write-back, enabled only by the health system: a clinical note containing the scheduler sheet (DocumentReference) and/or procedure orders (ServiceRequest).</p>
+      </section>
+
+      <section>
+        <h2>Privacy and security</h2>
+        <ul>
+          <li>Sign-in is through Epic (SMART on FHIR, OAuth 2.0 with PKCE). The app has no passwords of its own.</li>
+          <li>Chart data is read in the browser and is not stored by the app. Closing the window discards it.</li>
+          <li>If the health system enables AI interpretation, the selected text and the patient's age, sex and problem list are sent to an AI service operating under a business associate agreement. The patient's name and MRN are not sent.</li>
+          <li>The AI only proposes; the clinician confirms every item before it is used.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Coding content</h2>
+        <p>The procedure catalog lists vascular procedures in plain language with their CPT codes and booking defaults. It is reviewed by each organization's coding team before use. CPT is a registered trademark of the American Medical Association. ICD-10-CM codes are published by CMS and NCHS.</p>
+      </section>
+
+      <section>
+        <h2>Launch details</h2>
+        <table>
+          <tr><td>FHIR version</td><td>R4</td></tr>
+          <tr><td>Launch</td><td>EHR launch (in patient context); standalone launch for testing</td></tr>
+          <tr><td>Launch URL</td><td><code>/launch.html</code> on this site</td></tr>
+          <tr><td>Redirect URL</td><td><code>/index.html</code> on this site</td></tr>
+          <tr><td>Client type</td><td>Public (no client secret)</td></tr>
+        </table>
+      </section>
+
+      <footer>Contact: the practice's vascular surgery department. Not for patient use. The surgeon is responsible for the final request.</footer>
+    </main>
+  </body>
+</html>

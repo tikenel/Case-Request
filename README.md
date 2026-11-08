@@ -137,6 +137,18 @@ npm run dev            # web on http://localhost:5173, API on :8787
   and `/launch`. It needs HTTPS, and the host must sign a BAA because AI
   requests carry PHI. The page itself talks to Epic directly from the browser.
 
+## Hosting
+
+The pages are static and deploy to Vercel from `main` (`vercel.json`). That
+gives the https addresses Epic requires:
+
+- Launch URL: `https://<host>/launch.html`
+- Redirect URI: `https://<host>/index.html`
+- Public documentation URL: `https://<host>/docs.html`
+
+The AI endpoint (`server/`) isn't part of the Vercel deploy. Without it, the
+app runs with AI off. Host the server under a BAA when AI is wanted.
+
 ## Getting it into Epic: steps for the Epic super user and IT
 
 1. **Register the app** at fhir.epic.com → Build Apps. Choose:
