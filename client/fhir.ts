@@ -29,11 +29,32 @@ export function authorize() {
   return FHIR.oauth2.authorize({ clientId, scope: SCOPES, redirectUri: "./index.html", pkceMode: "ifSupported" });
 }
 
-export type Session = { kind: "demo" } | { kind: "epic"; client: Client };
+/** patientId is the chart's patient, or a test patient picked when Epic opened the app without one. */
+export type Session = { kind: "demo" } | { kind: "epic"; client: Client; patientId: string | null };
+
+const SANDBOX = "fhir.epic.com/interconnect-fhir-oauth";
+/** Epic's published sandbox test patients that carry the data this app reads. */
+export const SANDBOX_PATIENTS = [
+  { id: "e0w0LEDCYtfckT6N.CkJKCw3", name: "Warren McGinnis", has: "allergies, problems, notes, labs" },
+  { id: "egqBHVfQlt4Bw3XGXoxVxHg3", name: "Elijah Davis", has: "allergies, problems, notes, medications" },
+  { id: "erXuFYUfucBZaryVksYEcMg3", name: "Camila Lopez", has: "medications, labs" },
+  { id: "eh2xYHuzl9nkSFVvV3osUHg3", name: "Olivia Roberts", has: "problems, notes" },
+];
+export const isSandbox = (s: Session) => s.kind === "epic" && s.client.state.serverUrl.includes(SANDBOX);
+const TEST_PATIENT_KEY = "case-request:test-patient";
+
+/** For standalone testing only: remember the chosen test patient for this browser tab. */
+export function pickTestPatient(s: Session, id: string): Session {
+  try { sessionStorage.setItem(TEST_PATIENT_KEY, id); } catch { /* private mode */ }
+  return s.kind === "epic" ? { ...s, patientId: id } : s;
+}
 
 export async function connect(): Promise<Session> {
   if (new URLSearchParams(location.search).has("demo")) return { kind: "demo" };
-  return { kind: "epic", client: await FHIR.oauth2.ready() };
+  const client = await FHIR.oauth2.ready();
+  let stored: string | null = null;
+  try { stored = sessionStorage.getItem(TEST_PATIENT_KEY); } catch { /* private mode */ }
+  return { kind: "epic", client, patientId: client.patient.id ?? stored };
 }
 
 async function search(client: Client, query: string): Promise<FhirResource[]> {
@@ -60,10 +81,11 @@ function personName(r: unknown): string | null {
 export async function loadChart(s: Session): Promise<ChartSummary> {
   if (s.kind === "demo") return DEMO_CHART;
   const c = s.client;
-  const pid = c.patient.id!;
+  const pid = s.patientId;
+  if (!pid) throw new Error("No patient is open. Launch the app from a patient's chart.");
   const since = new Date(Date.now() - 365 * 86_400_000).toISOString().slice(0, 10);
   const [patient, user, conds, meds, alls, obs, cov, docs] = await Promise.all([
-    c.patient.read(),
+    c.patient.id ? c.patient.read() : c.request(`Patient/${pid}`),
     settled(c.user.read(), null),
     settled(search(c, `Condition?patient=${pid}&category=problem-list-item`), []),
     settled(search(c, `MedicationRequest?patient=${pid}&status=active`), []),
@@ -105,7 +127,7 @@ export function aiHeaders(s: Session): Record<string, string> {
   return {
     Authorization: `Bearer ${s.client.state.tokenResponse?.access_token ?? ""}`,
     "X-FHIR-Server": s.client.state.serverUrl,
-    "X-FHIR-Patient": s.client.patient.id ?? "",
+    "X-FHIR-Patient": s.patientId ?? "",
   };
 }
 
