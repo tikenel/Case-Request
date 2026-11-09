@@ -195,6 +195,16 @@ Angio, endovascular and venous procedures default to the Hybrid OR, which is
 also the angio room; there are no office-lab or procedure rooms. The clinician
 can change the site for any case.
 
+## Contrast allergy
+
+When the chart has a contrast allergy and the case may use contrast, a red
+prompt appears under the procedures: **"Contrast allergy: order
+premedication."** That covers contrast procedures and open cases with a C-arm
+completion angiogram, such as a bypass. The clinician orders the premedication
+in Epic, then ticks **Premedication ordered** (with an optional regimen) or
+**No contrast will be used**. The request can't be sent until one is ticked,
+and the scheduler sheet shows which.
+
 ## Medications and medical history
 
 The patient's active medications, problem list and allergies come from the

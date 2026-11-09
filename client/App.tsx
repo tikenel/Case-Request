@@ -4,7 +4,7 @@ import type { ChartSummary, NoteRef } from "../shared/chart";
 import { searchDiagnoses } from "../shared/diagnoses";
 import { searchProcedures, type Side } from "../shared/match";
 import {
-  booking, checklistFor, emptyRequest, packetText, postingLine, schedulerPacket, validate,
+  booking, checklistFor, contrastAllergies, emptyRequest, needsPremedPrompt, packetText, postingLine, schedulerPacket, validate,
   type DatePlan, type PriorAuth, type SurgeryRequest, type Urgency,
 } from "../shared/request";
 import { applySuggestion, defaultAccepted, offlineSuggestion, type Accepted, type Suggestion } from "../shared/suggestion";
@@ -81,6 +81,7 @@ export default function App({ session }: { session: Session }) {
         <StatusPanel session={session} patientId={chart.patient.id} sentAt={sentAt} />
         <Describe session={session} chart={chart} config={config} onApply={(s, a) => setReq((r) => applySuggestion(r, s, a))} />
         <Procedures req={req} setReq={setReq} />
+        {needsPremedPrompt(req, chart) && <PremedPrompt req={req} setReq={setReq} chart={chart} />}
         <Diagnoses req={req} setReq={setReq} chart={chart} />
         <Medications req={req} setReq={setReq} chart={chart} favorites={favorites} setFavorites={updateFavorites} />
         <Timing req={req} set={set} />
@@ -384,6 +385,27 @@ function Procedures({ req, setReq }: { req: SurgeryRequest; setReq: React.Dispat
   );
 }
 
+/* ── Contrast allergy prompt ───────────────────────────────────────── */
+
+function PremedPrompt({ req, setReq, chart }: { req: SurgeryRequest; setReq: React.Dispatch<React.SetStateAction<SurgeryRequest>>; chart: ChartSummary }) {
+  const setPremed = (patch: Partial<SurgeryRequest["premed"]>) => setReq((r) => ({ ...r, premed: { ...r.premed, ...patch } }));
+  const st = req.premed.status;
+  return (
+    <section className={`premed ${st ? "ok" : ""}`} role="alert">
+      <h2>⚠ Contrast allergy: order premedication</h2>
+      <p>
+        Allergy on file: <b>{contrastAllergies(chart).join(", ")}</b>. This case may use contrast
+        {booking(req).contrast ? "" : " (C-arm or completion angiogram)"}. Order the premedication in Epic, then tick it here.
+      </p>
+      <div className="row wrap">
+        <label className="tick"><input type="checkbox" checked={st === "ordered"} onChange={(e) => setPremed({ status: e.target.checked ? "ordered" : null })} /> Premedication ordered</label>
+        <input className="grow" value={req.premed.regimen} onChange={(e) => setPremed({ regimen: e.target.value })} placeholder="Regimen (optional), e.g. per institutional protocol" disabled={st !== "ordered"} />
+        <label className="tick"><input type="checkbox" checked={st === "no contrast"} onChange={(e) => setPremed({ status: e.target.checked ? "no contrast" : null })} /> No contrast will be used</label>
+      </div>
+    </section>
+  );
+}
+
 /* ── 3. Diagnoses ─────────────────────────────────────────────────────── */
 
 function Diagnoses({ req, setReq, chart }: { req: SurgeryRequest; setReq: React.Dispatch<React.SetStateAction<SurgeryRequest>>; chart: ChartSummary }) {
@@ -615,7 +637,7 @@ function Checklist({ req, setReq }: { req: SurgeryRequest; setReq: React.Dispatc
 /* ── 7. Review and send ───────────────────────────────────────────────── */
 
 function Review({ req, chart, session, onSent }: { req: SurgeryRequest; chart: ChartSummary; session: Session; onSent: () => void }) {
-  const issues = validate(req);
+  const issues = validate(req, new Date(), chart);
   const errors = issues.filter((i) => i.level === "error");
   const packet = schedulerPacket(req, chart);
   const text = packetText(req, chart);

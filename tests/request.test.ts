@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEMO_CHART } from "../shared/demo";
 import { noteResource, serviceRequests } from "../shared/fhirOut";
-import { booking, checklistFor, derive, emptyRequest, packetText, postingLine, validate, type SurgeryRequest } from "../shared/request";
+import { booking, checklistFor, needsPremedPrompt, derive, emptyRequest, packetText, postingLine, validate, type SurgeryRequest } from "../shared/request";
 import { plansFor } from "../shared/meds";
 import { applySuggestion, defaultAccepted, offlineSuggestion, type Suggestion } from "../shared/suggestion";
 
@@ -41,18 +41,35 @@ describe("locations", () => {
   });
 });
 
+describe("contrast allergy premedication", () => {
+  // DEMO_CHART has an iodinated contrast allergy.
+  it("prompts for contrast cases and open cases with a completion angiogram, not otherwise", () => {
+    expect(needsPremedPrompt(base({ procedures: [{ id: "37226", side: "Right", note: "" }] }), DEMO_CHART)).toBe(true);
+    expect(needsPremedPrompt(base(), DEMO_CHART)).toBe(true); // fem-pop bypass: C-arm completion angiogram
+    expect(needsPremedPrompt(base({ procedures: [{ id: "27880", side: "Left", note: "" }] }), DEMO_CHART)).toBe(false); // BKA
+    expect(needsPremedPrompt(base({ procedures: [{ id: "37226", side: "Right", note: "" }] }), { ...DEMO_CHART, allergies: [] })).toBe(false);
+  });
+  it("blocks sending until premedication is ordered or no contrast is confirmed, and shows it on the sheet", () => {
+    const r = base({ procedures: [{ id: "37226", side: "Right", note: "" }] });
+    expect(validate(r, today, DEMO_CHART).some((i) => i.field === "premed" && i.level === "error")).toBe(true);
+    const ordered = { ...r, premed: { status: "ordered" as const, regimen: "per protocol" } };
+    expect(validate(ordered, today, DEMO_CHART).some((i) => i.field === "premed")).toBe(false);
+    expect(packetText(ordered, DEMO_CHART)).toContain("CONTRAST ALLERGY: premedication ordered (per protocol)");
+    expect(packetText({ ...r, premed: { status: "no contrast", regimen: "" } }, DEMO_CHART)).toContain("no contrast will be used");
+  });
+});
+
 describe("pre-op checklist", () => {
   it("builds items from the chart and keeps what was entered", () => {
     const r = base({ procedures: [{ id: "37226", side: "Right", note: "" }] });
     const ids = checklistFor(r, DEMO_CHART).map((c) => c.id);
-    expect(ids).toEqual(expect.arrayContaining(["sglt2", "diabetes", "renal", "contrast-allergy", "auth"]));
+    expect(ids).toEqual(expect.arrayContaining(["sglt2", "diabetes", "renal", "auth"]));
     expect(ids).not.toContain("anticoag"); // blood thinners are decided in the medication section now
     const kept = checklistFor({ ...r, checklist: [{ id: "sglt2", label: "", why: "", done: true, detail: "Hold 3 days" }] }, DEMO_CHART);
     expect(kept.find((c) => c.id === "sglt2")).toMatchObject({ done: true, detail: "Hold 3 days" });
   });
   it("skips contrast items for an open case", () => {
     const ids = checklistFor(base(), DEMO_CHART).map((c) => c.id);
-    expect(ids).not.toContain("contrast-allergy");
     expect(ids).toContain("anesthesia");
   });
 });

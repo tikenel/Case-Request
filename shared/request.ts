@@ -36,6 +36,8 @@ export interface SurgeryRequest {
   checklist: CheckItem[];
   /** Continue/hold decisions for anticoagulants, antiplatelets and kidney-risk drugs on file. */
   medPlans: MedPlan[];
+  /** Contrast allergy on file and the case may use contrast: premedication ordered, or no contrast planned. */
+  premed: { status: "ordered" | "no contrast" | null; regimen: string };
   schedulerNotes: string;
   /** Free text the surgeon typed or the note excerpt the AI read, kept for the sheet. */
   source: string;
@@ -60,6 +62,7 @@ export function emptyRequest(user: string | null): SurgeryRequest {
     priorAuth: "Unknown",
     checklist: [],
     medPlans: [],
+    premed: { status: null, regimen: "" },
     schedulerNotes: "",
     source: "",
   };
@@ -143,7 +146,6 @@ export function checklistFor(req: SurgeryRequest, chart: ChartSummary | null): C
     const egfr = chart?.labs.egfr?.value;
     if (egfr === undefined) add("renal", "Recent creatinine/eGFR before contrast", "Contrast case; no recent eGFR in the chart.");
     else if (egfr < 45) add("renal", "Renal protection plan for contrast (hydration, limit contrast, CO2 if available)", `eGFR ${egfr}. Contrast case.`);
-    if (chart?.allergies.some((a) => a.contrast)) add("contrast-allergy", "Contrast allergy premedication protocol ordered", `Allergy on file: ${chart.allergies.filter((a) => a.contrast).map((a) => a.display).join(", ")}.`);
   }
   if (chart?.allergyStatus === "not on file") add("allergy-history", "Allergy history taken and entered in the chart", "The chart says allergies are not on file.");
   if (b.anesthesia === "General" || b.anesthesia === "MAC") add("anesthesia", "Pre-anesthesia evaluation booked", `${b.anesthesia} anesthesia.`);
@@ -164,10 +166,26 @@ export function checklistFor(req: SurgeryRequest, chart: ChartSummary | null): C
   return items.map((i) => ({ ...i, done: prev.get(i.id)?.done ?? false, detail: prev.get(i.id)?.detail ?? "" }));
 }
 
+/** Contrast allergies on file. */
+export function contrastAllergies(chart: ChartSummary | null): string[] {
+  return chart?.allergies.filter((a) => a.contrast).map((a) => a.display) ?? [];
+}
+
+/** The case may use contrast: a contrast procedure, or imaging equipment such as a C-arm completion angiogram. */
+export function mayUseContrast(req: SurgeryRequest): boolean {
+  const b = booking(req);
+  return b.contrast || b.equipment.some((e) => /c-arm|fluoro|angiogra|power injector|fixed imaging/i.test(e));
+}
+
+/** Show the premedication prompt: contrast allergy on file and the case may use contrast. */
+export function needsPremedPrompt(req: SurgeryRequest, chart: ChartSummary | null): boolean {
+  return req.procedures.length > 0 && contrastAllergies(chart).length > 0 && mayUseContrast(req);
+}
+
 export interface Issue { level: "error" | "warning"; field: string; message: string }
 
 /** Everything that would make a scheduler call back. Errors block sending; warnings don't. */
-export function validate(req: SurgeryRequest, today = new Date()): Issue[] {
+export function validate(req: SurgeryRequest, today = new Date(), chart: ChartSummary | null = null): Issue[] {
   const out: Issue[] = [];
   const err = (field: string, message: string) => out.push({ level: "error", field, message });
   const warn = (field: string, message: string) => out.push({ level: "warning", field, message });
@@ -205,9 +223,8 @@ export function validate(req: SurgeryRequest, today = new Date()): Issue[] {
     if (!m.action) (m.cls === "anticoagulant" ? err : warn)("meds", `Continue or hold ${name}?`);
     else if (m.action === "hold" && !(m.holdDays && m.holdDays > 0)) err("meds", `Enter how many days to hold ${m.med}.`);
   }
-  for (const c of req.checklist) {
-    if (c.id === "contrast-allergy" && !c.done && !c.detail.trim()) err("checklist", `${c.label}: mark it done or write the plan.`);
-  }
+  if (needsPremedPrompt(req, chart) && !req.premed.status)
+    err("premed", `Contrast allergy (${contrastAllergies(chart).join(", ")}): order premedication, or confirm no contrast will be used.`);
   return out;
 }
 
@@ -284,6 +301,11 @@ export function schedulerPacket(req: SurgeryRequest, chart: ChartSummary | null)
     {
       title: "7. Medications and medical history",
       lines: [
+        ...(needsPremedPrompt(req, chart)
+          ? [req.premed.status === "ordered" ? `CONTRAST ALLERGY: premedication ordered${req.premed.regimen.trim() ? ` (${req.premed.regimen.trim()})` : ""}`
+            : req.premed.status === "no contrast" ? "Contrast allergy on file: no contrast will be used"
+            : "CONTRAST ALLERGY: premedication not yet ordered"]
+          : []),
         ...req.medPlans.map((m) => planLine(m, req.datePlan === "On date" ? req.dateFrom || null : null)),
         ...(chart ? otherMeds(chart, req.medPlans) : []),
         ...(chart?.problems.length ? [`Medical problems: ${chart.problems.map((p) => p.display).join("; ")}`] : []),

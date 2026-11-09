@@ -136,6 +136,11 @@ section.status h2 { flex-wrap: wrap; }
 .star { border: 0; font-size: 20px; color: var(--muted); padding: 0 4px; background: none; }
 .star.on { color: #d49b00; }
 ul.plain { margin: 0; padding-left: 18px; font-size: 13px; }
+.premed { border: 2px solid var(--bad); background: var(--bad-weak); }
+.premed h2 { color: var(--bad); }
+.premed p { margin: 0 0 4px; }
+.premed.ok { border-color: var(--ok); background: #eef7f1; }
+.premed.ok h2 { color: var(--ok); }
 footer { color: var(--muted); font-size: 12px; margin-top: 18px; }
 
 @media (max-width: 760px) {
