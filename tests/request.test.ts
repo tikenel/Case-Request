@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DEMO_CHART } from "../shared/demo";
 import { noteResource, serviceRequests } from "../shared/fhirOut";
 import { booking, checklistFor, derive, emptyRequest, packetText, postingLine, validate, type SurgeryRequest } from "../shared/request";
+import { plansFor } from "../shared/meds";
 import { applySuggestion, defaultAccepted, offlineSuggestion, type Suggestion } from "../shared/suggestion";
 
 const today = new Date("2026-11-08T12:00:00Z");
@@ -32,9 +33,10 @@ describe("pre-op checklist", () => {
   it("builds items from the chart and keeps what was entered", () => {
     const r = base({ procedures: [{ id: "37226", side: "Right", note: "" }] });
     const ids = checklistFor(r, DEMO_CHART).map((c) => c.id);
-    expect(ids).toEqual(expect.arrayContaining(["anticoag", "antiplatelet", "sglt2", "diabetes", "renal", "contrast-allergy", "auth"]));
-    const kept = checklistFor({ ...r, checklist: [{ id: "anticoag", label: "", why: "", done: false, detail: "Hold 3 days" }] }, DEMO_CHART);
-    expect(kept.find((c) => c.id === "anticoag")?.detail).toBe("Hold 3 days");
+    expect(ids).toEqual(expect.arrayContaining(["sglt2", "diabetes", "renal", "contrast-allergy", "auth"]));
+    expect(ids).not.toContain("anticoag"); // blood thinners are decided in the medication section now
+    const kept = checklistFor({ ...r, checklist: [{ id: "sglt2", label: "", why: "", done: true, detail: "Hold 3 days" }] }, DEMO_CHART);
+    expect(kept.find((c) => c.id === "sglt2")).toMatchObject({ done: true, detail: "Hold 3 days" });
   });
   it("skips contrast items for an open case", () => {
     const ids = checklistFor(base(), DEMO_CHART).map((c) => c.id);
@@ -45,8 +47,8 @@ describe("pre-op checklist", () => {
 
 describe("validation", () => {
   it("passes a complete request", () => {
-    const r = base();
-    const withPlan = { ...r, checklist: checklistFor(r, DEMO_CHART).map((c) => (c.id === "anticoag" ? { ...c, detail: "Hold 3 days" } : c)) };
+    const r = base({ medPlans: plansFor(DEMO_CHART.meds.map((m) => m.display), { apixaban: { action: "hold", holdDays: 3 } }) });
+    const withPlan = { ...r, checklist: checklistFor(r, DEMO_CHART) };
     expect(validate(withPlan, today).filter((i) => i.level === "error")).toEqual([]);
   });
   it("catches what schedulers call back about", () => {
@@ -60,9 +62,13 @@ describe("validation", () => {
     ]));
     expect(validate(base({ procedures: [{ id: "34713", side: "Left", note: "" }] }), today).some((i) => i.message.includes("primary"))).toBe(true);
   });
-  it("requires an anticoagulant plan when the patient is on one", () => {
-    const r = base();
-    expect(validate({ ...r, checklist: checklistFor(r, DEMO_CHART) }, today).some((i) => i.field === "checklist" && i.level === "error")).toBe(true);
+  it("requires a continue/hold decision for anticoagulants, and days for a hold", () => {
+    const plans = plansFor(DEMO_CHART.meds.map((m) => m.display), {});
+    const issues = validate(base({ medPlans: plans }), today).filter((i) => i.field === "meds");
+    expect(issues.find((i) => i.message.includes("apixaban"))?.level).toBe("error");
+    expect(issues.find((i) => i.message.includes("aspirin"))?.level).toBe("warning");
+    const noDays = plans.map((p) => (p.agent === "apixaban" ? { ...p, action: "hold" as const, holdDays: null } : p));
+    expect(validate(base({ medPlans: noDays }), today).some((i) => i.level === "error" && i.message.includes("how many days"))).toBe(true);
   });
 });
 
@@ -98,11 +104,11 @@ describe("suggestions", () => {
   it("pre-ticks only confident items and merges them", () => {
     const a = defaultAccepted(s);
     expect([...a.procedures]).toEqual([0]);
-    const start = { ...emptyRequest("Dr"), checklist: [{ id: "anticoag", label: "", why: "", done: false, detail: "" }] };
+    const start = { ...emptyRequest("Dr"), medPlans: plansFor(["apixaban 5 mg tablet", "aspirin 81 mg"], {}) };
     const r = applySuggestion(start, s, a);
     expect(r.procedures).toEqual([{ id: "35656", side: "Right", note: "" }]);
     expect(r).toMatchObject({ urgency: "Urgent", datePlan: "Between dates", dateTo: "2026-11-29", anesthesia: "General", extraEquipment: "6 mm PTFE" });
-    expect(r.checklist[0].detail).toBe("Hold apixaban 3 days, no bridging");
+    expect(r.medPlans.find((m) => m.agent === "apixaban")).toMatchObject({ action: "hold", holdDays: 3 });
     expect(applySuggestion(r, s, a).procedures).toHaveLength(1);
   });
   it("offers catalog matches without AI", () => {

@@ -4,6 +4,7 @@ import { procedureById } from "./catalog.js";
 import { searchProcedures, sideFromText, type Side } from "./match.js";
 import type { Admission, Anesthesia } from "./catalog.js";
 import type { DatePlan, SurgeryRequest, Urgency } from "./request.js";
+import { applyPlanText } from "./meds.js";
 
 export interface SuggestedProcedure { id: string; side: Side | null; evidence: string; confidence: "high" | "medium" | "low" }
 export interface Suggestion {
@@ -34,7 +35,7 @@ export function defaultAccepted(s: Suggestion): Accepted {
 }
 
 export function applySuggestion(req: SurgeryRequest, s: Suggestion, a: Accepted): SurgeryRequest {
-  const next: SurgeryRequest = { ...req, procedures: [...req.procedures], diagnoses: [...req.diagnoses], checklist: [...req.checklist] };
+  const next: SurgeryRequest = { ...req, procedures: [...req.procedures], diagnoses: [...req.diagnoses], checklist: [...req.checklist], medPlans: [...req.medPlans] };
   s.procedures.forEach((p, i) => {
     if (!a.procedures.has(i)) return;
     const existing = next.procedures.find((r) => r.id === p.id && (r.side === p.side || !r.side));
@@ -58,7 +59,7 @@ export function applySuggestion(req: SurgeryRequest, s: Suggestion, a: Accepted)
     if (s.vendorNotes && !next.vendorNotes.includes(s.vendorNotes)) next.vendorNotes = [next.vendorNotes.trim(), s.vendorNotes].filter(Boolean).join("; ");
     if (s.medicationPlan) {
       const plan = s.medicationPlan;
-      next.checklist = next.checklist.map((c) => (c.id === "anticoag" && !c.detail ? { ...c, detail: plan } : c));
+      next.medPlans = applyPlanText(plan, next.medPlans);
       if (!next.schedulerNotes.includes(plan)) next.schedulerNotes = [next.schedulerNotes.trim(), `Medication plan: ${plan}`].filter(Boolean).join("\n");
     }
   }

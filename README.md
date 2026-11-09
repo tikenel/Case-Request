@@ -187,6 +187,38 @@ app runs with AI off. Host the server under a BAA when AI is wanted.
 - Will it activate ServiceRequest.Create, or a case request API?
 - Should the app be an activity tab or a toolbar button, and for which roles?
 
+## Medications and medical history
+
+The patient's active medications, problem list and allergies come from the
+chart. Every medication that needs a peri-operative decision gets a
+**Continue / Hold for [X] days** choice:
+
+- **Anticoagulants:** apixaban, rivaroxaban, dabigatran, edoxaban, warfarin,
+  enoxaparin, dalteparin, fondaparinux, heparin. A decision is required before
+  sending.
+- **Antiplatelets:** aspirin, clopidogrel, ticagrelor, prasugrel, cilostazol,
+  dipyridamole, vorapaxar.
+- **Kidney risk:** NSAIDs, ACE inhibitors and ARBs (including Entresto),
+  aminoglycosides, vancomycin, amphotericin, tacrolimus, cyclosporine,
+  lithium, methotrexate.
+
+Brand names (Eliquis, Plavix, Toradol…) are recognized, and heparin flushes
+are ignored.
+
+**Favorites:** ★ saves the current choice as your usual for that drug
+("apixaban: hold 3 days", "aspirin: continue"). It's applied automatically for
+your next patients, and you can change it for any patient. Favorites are saved
+in the browser per signed-in user, so they don't follow you to another
+computer until the app has a server under a BAA.
+
+**On the scheduler sheet:** HOLD and CONTINUE lines. When the surgery date is
+fixed, the last dose date is worked out too (hold 3 days before a surgery on
+the 20th means the last dose is on the 16th). Other medications, medical
+problems and allergies are listed as well. The app records the surgeon's
+decision; it never suggests a hold length. A plan dictated or written in the
+note ("hold Eliquis 3 days, continue aspirin") fills in the choices, which the
+clinician then confirms.
+
 ## Surgical team roster
 
 The operating-surgeon list comes from `public/team.json`, which the practice

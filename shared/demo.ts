@@ -33,6 +33,7 @@ export const DEMO_CHART: ChartSummary = {
     { display: "aspirin 81 mg tablet", flags: ["antiplatelet"] },
     { display: "empagliflozin 10 mg tablet", flags: ["sglt2"] },
     { display: "metformin 1000 mg tablet", flags: ["metformin"] },
+    { display: "lisinopril 20 mg tablet", flags: ["nephrotoxic"] },
     { display: "atorvastatin 80 mg tablet", flags: [] },
   ],
   labs: {

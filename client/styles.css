@@ -122,6 +122,19 @@ section.status h2 { flex-wrap: wrap; }
 .chip-status.scheduling, .chip-status.requested { background: var(--warn-weak); color: var(--warn); }
 .chip-status.scheduled, .chip-status.arrived, .chip-status.done { background: #e3f3ea; color: var(--ok); }
 .chip-status.cancelled { background: var(--bad-weak); color: var(--bad); }
+.meds { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+.meds td { border-top: 1px solid var(--line); padding: 8px 6px; vertical-align: middle; }
+.meds tr.needs td { background: var(--bad-weak); }
+.meds td:last-child { width: 40px; text-align: center; }
+.tick { display: inline-flex; align-items: center; gap: 6px; margin: 0 14px 0 0; font-size: 14px; font-weight: 400; color: var(--ink); }
+.days { width: 60px; padding: 4px 6px; }
+.cls { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 4px; }
+.cls.anticoagulant { background: var(--bad-weak); color: var(--bad); }
+.cls.antiplatelet { background: var(--warn-weak); color: var(--warn); }
+.cls.nephrotoxic { background: #e8eefc; color: #3657a8; }
+.star { border: 0; font-size: 20px; color: var(--muted); padding: 0 4px; background: none; }
+.star.on { color: #d49b00; }
+ul.plain { margin: 0; padding-left: 18px; font-size: 13px; }
 footer { color: var(--muted); font-size: 12px; margin-top: 18px; }
 
 @media (max-width: 760px) {

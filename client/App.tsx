@@ -9,6 +9,8 @@ import {
 } from "../shared/request";
 import { applySuggestion, defaultAccepted, offlineSuggestion, type Accepted, type Suggestion } from "../shared/suggestion";
 import { defaultPeople, matchMember, surgeonChoices, type TeamMember } from "../shared/team";
+import { CLASS_LABEL, lastDoseDate, matchesFavorite, plansFor, withFavorite, withoutFavorite, type Favorites, type MedPlan } from "../shared/meds";
+import { loadFavorites, saveFavorites } from "./favorites";
 import { formatWhen, stages, type Tracking } from "../shared/tracking";
 import {
   aiHeaders, fileNote, loadBoard, loadChart, loadTeam, loadTracking, readNote, sendOrders, TRACKING_LIST, WRITE_NOTE, WRITE_ORDERS,
@@ -26,6 +28,7 @@ export default function App({ session }: { session: Session }) {
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [view, setView] = useState<"patient" | "board">("patient");
   const [sentAt, setSentAt] = useState<number | null>(null);
+  const [favorites, setFavorites] = useState<Favorites>({});
 
   useEffect(() => {
     fetch("/api/config").then((r) => r.json()).then(setConfig).catch(() => undefined);
@@ -36,7 +39,15 @@ export default function App({ session }: { session: Session }) {
         // Signed-in surgeon (roster) or physician becomes the operating surgeon; APPs pick one.
         const people = defaultPeople(c.signedIn, t);
         const fallback = c.signedIn ? "" : c.user ?? "";
-        setReq((r) => ({ ...r, surgeon: r.surgeon || people.surgeon || fallback, requestedBy: r.requestedBy || people.requestedBy || c.user || "" }));
+        const favs = loadFavorites(c.signedIn);
+        setFavorites(favs);
+        setReq((r) => ({
+          ...r,
+          surgeon: r.surgeon || people.surgeon || fallback,
+          requestedBy: r.requestedBy || people.requestedBy || c.user || "",
+          // Decisions for anticoagulants, antiplatelets and kidney-risk drugs, prefilled from the user's usual.
+          medPlans: plansFor(c.meds.map((m) => m.display), favs, r.medPlans),
+        }));
       })
       .catch((e) => setLoadError(e instanceof Error ? e.message : String(e)));
   }, [session]);
@@ -51,6 +62,10 @@ export default function App({ session }: { session: Session }) {
   }, [checklistKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = <K extends keyof SurgeryRequest>(k: K, v: SurgeryRequest[K]) => setReq((r) => ({ ...r, [k]: v }));
+  const updateFavorites = (f: Favorites) => {
+    setFavorites(f);
+    saveFavorites(chart?.signedIn ?? null, f);
+  };
 
   if (loadError) return <div className="fatal">Couldn't read the chart from Epic: {loadError}. Relaunch the app from the patient's chart.</div>;
   if (!chart) return <div className="loading">Reading the chart…</div>;
@@ -66,6 +81,7 @@ export default function App({ session }: { session: Session }) {
         <Describe session={session} chart={chart} config={config} onApply={(s, a) => setReq((r) => applySuggestion(r, s, a))} />
         <Procedures req={req} setReq={setReq} />
         <Diagnoses req={req} setReq={setReq} chart={chart} />
+        <Medications req={req} setReq={setReq} chart={chart} favorites={favorites} setFavorites={updateFavorites} />
         <Timing req={req} set={set} />
         <Booking req={req} set={set} team={team} chart={chart} />
         <Checklist req={req} setReq={setReq} />
@@ -409,13 +425,76 @@ function Diagnoses({ req, setReq, chart }: { req: SurgeryRequest; setReq: React.
   );
 }
 
+/* ── 4. Medications and medical history ─────────────────────────────── */
+
+function Medications({ req, setReq, chart, favorites, setFavorites }: {
+  req: SurgeryRequest; setReq: React.Dispatch<React.SetStateAction<SurgeryRequest>>; chart: ChartSummary; favorites: Favorites; setFavorites: (f: Favorites) => void;
+}) {
+  const update = (agent: string, patch: Partial<MedPlan>) =>
+    setReq((r) => ({ ...r, medPlans: r.medPlans.map((m) => (m.agent === agent ? { ...m, ...patch, fromFavorite: false } : m)) }));
+  const decided = new Set(req.medPlans.map((m) => m.med));
+  const others = chart.meds.filter((m) => !decided.has(m.display));
+  const surgeryDate = req.datePlan === "On date" && req.dateFrom ? req.dateFrom : null;
+  return (
+    <Section n={4} title="Medications & medical history" hint="From the chart. Decide continue or hold for blood thinners and kidney-risk drugs; ★ saves your usual choice for next time.">
+      {req.medPlans.length === 0 ? (
+        <p className="muted">No anticoagulants, antiplatelets or kidney-risk medications on file.</p>
+      ) : (
+        <table className="meds">
+          <tbody>
+            {req.medPlans.map((m) => {
+              const fav = matchesFavorite(favorites, m);
+              const last = m.action === "hold" && m.holdDays && surgeryDate ? lastDoseDate(surgeryDate, m.holdDays) : null;
+              return (
+                <tr key={m.agent} className={m.action ? "" : m.cls === "anticoagulant" ? "needs" : ""}>
+                  <td>
+                    <b>{m.med}</b>
+                    <div><span className={`cls ${m.cls}`}>{CLASS_LABEL[m.cls]}</span>{m.fromFavorite && fav && <span className="muted small"> · your usual</span>}</div>
+                  </td>
+                  <td>
+                    <label className="tick"><input type="radio" name={`med-${m.agent}`} checked={m.action === "continue"} onChange={() => update(m.agent, { action: "continue", holdDays: null })} /> Continue</label>
+                    <label className="tick">
+                      <input type="radio" name={`med-${m.agent}`} checked={m.action === "hold"} onChange={() => update(m.agent, { action: "hold", holdDays: m.holdDays ?? favorites[m.agent]?.holdDays ?? null })} /> Hold for
+                      <input className="days" type="number" min={1} max={60} value={m.holdDays ?? ""} placeholder="X"
+                        onChange={(e) => update(m.agent, { action: "hold", holdDays: e.target.value ? Math.max(1, Math.round(Number(e.target.value))) : null })} />
+                      days
+                    </label>
+                    {last && <div className="muted small">Last dose {last}</div>}
+                  </td>
+                  <td>
+                    <button className={`star ${fav ? "on" : ""}`} disabled={!m.action || (m.action === "hold" && !m.holdDays)}
+                      title={fav ? "Your usual for this drug. Click to forget it." : "Save as my usual for this drug"}
+                      onClick={() => setFavorites(fav ? withoutFavorite(favorites, m.agent) : withFavorite(favorites, m))}>
+                      {fav ? "★" : "☆"}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+      <div className="grid two">
+        <div className="field">
+          <label>Other active medications ({others.length})</label>
+          {others.length ? <ul className="plain">{others.map((m) => <li key={m.display}>{m.display}</li>)}</ul> : <p className="muted">None on file.</p>}
+        </div>
+        <div className="field">
+          <label>Medical problems ({chart.problems.length})</label>
+          {chart.problems.length ? <ul className="plain">{chart.problems.map((p) => <li key={`${p.code}${p.display}`}>{p.display}{p.code && <span className="muted"> · {p.code}</span>}</li>)}</ul> : <p className="muted">None on the problem list.</p>}
+        </div>
+      </div>
+    </Section>
+  );
+}
+
 /* ── 4. Timing ────────────────────────────────────────────────────────── */
 
 type Setter = <K extends keyof SurgeryRequest>(k: K, v: SurgeryRequest[K]) => void;
 
 function Timing({ req, set }: { req: SurgeryRequest; set: Setter }) {
   return (
-    <Section n={4} title="When">
+    <Section n={5} title="When">
       <div className="row wrap">
         <div className="seg">
           {(["Elective", "Urgent", "Emergent"] as Urgency[]).map((u) => (
@@ -450,7 +529,7 @@ function Booking({ req, set, team, chart }: { req: SurgeryRequest; set: Setter; 
     </div>
   );
   return (
-    <Section n={5} title="Room, time and equipment" hint="Defaults come from the procedures. Change anything that's different for this patient.">
+    <Section n={6} title="Room, time and equipment" hint="Defaults come from the procedures. Change anything that's different for this patient.">
       <div className="grid">
         {pick<Setting>("Location", "setting", ["Main OR", "Hybrid OR", "Angio/IR suite", "Office-based lab", "Procedure room"], b.setting)}
         {pick<Anesthesia>("Anesthesia", "anesthesia", ["General", "MAC/sedation", "Regional", "Local"], b.anesthesia)}
@@ -508,7 +587,7 @@ function Checklist({ req, setReq }: { req: SurgeryRequest; setReq: React.Dispatc
   const update = (id: string, patch: Partial<{ done: boolean; detail: string }>) =>
     setReq((r) => ({ ...r, checklist: r.checklist.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
   return (
-    <Section n={6} title="Before the date" hint="Built from the procedures and the chart. Tick what's already done; write plans where asked.">
+    <Section n={7} title="Before the date" hint="Built from the procedures and the chart. Tick what's already done; write plans where asked.">
       {req.checklist.length === 0 ? <p className="muted">Add a procedure to see the checklist.</p> : (
         <ul className="checklist">
           {req.checklist.map((c) => (
@@ -547,7 +626,7 @@ function Review({ req, chart, session, onSent }: { req: SurgeryRequest; chart: C
   };
 
   return (
-    <Section n={7} title="Review and send">
+    <Section n={8} title="Review and send">
       {issues.length > 0 && (
         <ul className="issues">
           {issues.map((i, k) => <li key={k} className={i.level}>{i.level === "error" ? "Required" : "Check"}: {i.message}</li>)}

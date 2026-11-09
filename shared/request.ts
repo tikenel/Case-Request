@@ -4,6 +4,7 @@
 import { procedureById, type Admission, type Anesthesia, type Blood, type Procedure, type Setting } from "./catalog.js";
 import type { ChartSummary } from "./chart.js";
 import type { Side } from "./match.js";
+import { CLASS_LABEL, planLine, type MedPlan } from "./meds.js";
 
 export type Urgency = "Elective" | "Urgent" | "Emergent";
 export type DatePlan = "First available" | "On date" | "No later than" | "Between dates";
@@ -31,6 +32,8 @@ export interface SurgeryRequest {
   vendorNotes: string;
   priorAuth: PriorAuth;
   checklist: CheckItem[];
+  /** Continue/hold decisions for anticoagulants, antiplatelets and kidney-risk drugs on file. */
+  medPlans: MedPlan[];
   schedulerNotes: string;
   /** Free text the surgeon typed or the note excerpt the AI read, kept for the sheet. */
   source: string;
@@ -54,6 +57,7 @@ export function emptyRequest(user: string | null): SurgeryRequest {
     vendorNotes: "",
     priorAuth: "Unknown",
     checklist: [],
+    medPlans: [],
     schedulerNotes: "",
     source: "",
   };
@@ -128,8 +132,8 @@ export function checklistFor(req: SurgeryRequest, chart: ChartSummary | null): C
   const named = (flag: string) => meds.filter((m) => m.flags.includes(flag as never)).map((m) => m.display).join(", ");
 
   for (const img of b.imaging) add(`img:${img}`, `Imaging on file: ${img}`, "Needed to plan the case and for prior authorization.");
-  if (named("anticoagulant")) add("anticoag", "Anticoagulant plan (hold dates, bridging) written by the surgeon", `On ${named("anticoagulant")}.`);
-  if (named("antiplatelet")) add("antiplatelet", "Antiplatelet plan: continue or hold", `On ${named("antiplatelet")}.`);
+  // Anticoagulant, antiplatelet and kidney-risk decisions live in req.medPlans, not here.
+  if (req.medPlans.some((p) => p.cls === "anticoagulant" && p.action === "hold")) add("bridging", "Bridging decided (needed or not)", "An anticoagulant is being held.");
   if (named("sglt2")) add("sglt2", "SGLT2 inhibitor hold instructions", `On ${named("sglt2")}. Usually held before surgery to avoid ketoacidosis; confirm timing with anesthesia.`);
   if (named("glp1") && b.anesthesia !== "Local") add("glp1", "GLP-1 agonist: flag for anesthesia review", `On ${named("glp1")}. Delayed gastric emptying affects anesthesia plans.`);
   if (named("insulin") || named("metformin")) add("diabetes", "Diabetes medication instructions for the day of surgery", `On ${[named("insulin"), named("metformin")].filter(Boolean).join(", ")}.`);
@@ -192,9 +196,13 @@ export function validate(req: SurgeryRequest, today = new Date()): Issue[] {
   const b = booking(req);
   if (b.vendor && !req.vendorNotes.trim()) warn("vendor", "A device or vendor rep is needed. Add the device, size or company if known.");
   if (req.urgency !== "Emergent" && req.priorAuth === "Unknown") warn("auth", "Say whether prior authorization is needed.");
+  for (const m of req.medPlans) {
+    const name = `${m.med} (${CLASS_LABEL[m.cls].toLowerCase()})`;
+    if (!m.action) (m.cls === "anticoagulant" ? err : warn)("meds", `Continue or hold ${name}?`);
+    else if (m.action === "hold" && !(m.holdDays && m.holdDays > 0)) err("meds", `Enter how many days to hold ${m.med}.`);
+  }
   for (const c of req.checklist) {
-    if ((c.id === "anticoag" || c.id === "contrast-allergy") && !c.done && !c.detail.trim())
-      err("checklist", `${c.label}: mark it done or write the plan.`);
+    if (c.id === "contrast-allergy" && !c.done && !c.detail.trim()) err("checklist", `${c.label}: mark it done or write the plan.`);
   }
   return out;
 }
@@ -270,14 +278,29 @@ export function schedulerPacket(req: SurgeryRequest, chart: ChartSummary | null)
       ],
     },
     {
-      title: "7. Before the date (check each)",
+      title: "7. Medications and medical history",
+      lines: [
+        ...req.medPlans.map((m) => planLine(m, req.datePlan === "On date" ? req.dateFrom || null : null)),
+        ...(chart ? otherMeds(chart, req.medPlans) : []),
+        ...(chart?.problems.length ? [`Medical problems: ${chart.problems.map((p) => p.display).join("; ")}`] : []),
+        ...(chart?.allergies.length ? [`Allergies: ${chart.allergies.map((a) => a.display).join("; ")}`] : chart?.allergyStatus === "none known" ? ["Allergies: none known"] : chart?.allergyStatus === "not on file" ? ["Allergies: not on file"] : []),
+      ].concat(req.medPlans.length || chart?.meds.length || chart?.problems.length ? [] : ["None on file."]),
+    },
+    {
+      title: "8. Before the date (check each)",
       lines: req.checklist.length
         ? req.checklist.map((c) => `[${c.done ? "x" : " "}] ${c.label}${c.detail ? ` — ${c.detail}` : ""} (${c.why})`)
         : ["Nothing extra beyond standard pre-op."],
     },
   ];
-  if (req.schedulerNotes.trim()) steps.push({ title: "8. Notes from the surgeon", lines: req.schedulerNotes.split("\n").filter(Boolean) });
+  if (req.schedulerNotes.trim()) steps.push({ title: "9. Notes from the surgeon", lines: req.schedulerNotes.split("\n").filter(Boolean) });
   return steps;
+}
+
+function otherMeds(chart: ChartSummary, plans: MedPlan[]): string[] {
+  const decided = new Set(plans.map((p) => p.med));
+  const rest = chart.meds.map((m) => m.display).filter((d) => !decided.has(d));
+  return rest.length ? [`Other active medications: ${rest.join("; ")}`] : [];
 }
 
 function uniqCodes(req: SurgeryRequest) {

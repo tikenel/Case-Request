@@ -1,6 +1,8 @@
 // Turns the FHIR resources Epic returns into the handful of facts a surgery
 // request needs. Pure functions, so they're tested without an Epic sandbox.
 
+import { classify } from "./meds.js";
+
 /* Minimal FHIR R4 shapes: only the fields this app reads. */
 export interface Coding { system?: string; code?: string; display?: string }
 export interface CodeableConcept { coding?: Coding[]; text?: string }
@@ -20,7 +22,7 @@ export interface PatientFacts {
 export interface Problem { code: string | null; system: string | null; display: string }
 export interface Allergy { display: string; contrast: boolean }
 export type AllergyStatus = "recorded" | "none known" | "not on file";
-export type MedFlag = "anticoagulant" | "antiplatelet" | "sglt2" | "glp1" | "metformin" | "insulin";
+export type MedFlag = "anticoagulant" | "antiplatelet" | "nephrotoxic" | "sglt2" | "glp1" | "metformin" | "insulin";
 export interface Med { display: string; flags: MedFlag[] }
 export interface Lab { value: number; unit: string; date: string | null }
 export interface Labs { egfr?: Lab; creatinine?: Lab; inr?: Lab; hemoglobin?: Lab; platelets?: Lab; potassium?: Lab; a1c?: Lab }
@@ -148,7 +150,9 @@ export function medications(requests: FhirResource[]): Med[] {
     const display = conceptText(m.medicationCodeableConcept) || obj(m.medicationReference).display?.toString() || "";
     if (!display || seen.has(display.toLowerCase())) continue;
     seen.add(display.toLowerCase());
-    out.push({ display, flags: MED_RULES.filter(([, re]) => re.test(display)).map(([f]) => f) });
+    const classes = classify(display).map((c) => c.cls);
+    const flags = [...new Set([...classes, ...MED_RULES.filter(([f, re]) => f !== "anticoagulant" && f !== "antiplatelet" && re.test(display)).map(([f]) => f)])];
+    out.push({ display, flags });
   }
   return out;
 }
