@@ -540,7 +540,7 @@ function Booking({ req, set, team, chart }: { req: SurgeryRequest; set: Setter; 
           </select>
         </div>
         {pick<Anesthesia>("Anesthesia", "anesthesia", ["General", "MAC", "Local/Sedation"], b.anesthesia)}
-        {pick<Admission>("After surgery", "admission", ["Outpatient", "Overnight (23 h)", "Inpatient", "ICU"], b.admission)}
+        {pick<Admission>("After surgery", "admission", ["Outpatient", "23h observation", "Admission (telemetry)", "Admission (ICU)"], b.admission)}
         <div className="field">
           <label>Minutes to book</label>
           <input type="number" min={15} step={15} value={req.minutes ?? ""} placeholder={b.minutes ? `${b.minutes} (default)` : "Add a procedure first"} onChange={(e) => set("minutes", e.target.value ? Number(e.target.value) : null)} />

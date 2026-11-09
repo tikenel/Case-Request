@@ -67,7 +67,7 @@ export function emptyRequest(user: string | null): SurgeryRequest {
 
 const SETTING_RANK: Setting[] = ["Main OR", "Hybrid OR"];
 const ANES_RANK: Anesthesia[] = ["Local/Sedation", "MAC", "General"];
-const ADMIT_RANK: Admission[] = ["Outpatient", "Overnight (23 h)", "Inpatient", "ICU"];
+const ADMIT_RANK: Admission[] = ["Outpatient", "23h observation", "Admission (telemetry)", "Admission (ICU)"];
 const BLOOD_RANK: Blood[] = ["None", "Type & screen", "Type & cross"];
 const top = <T>(rank: T[], vals: T[], fallback: T) => vals.reduce((a, b) => (rank.indexOf(b) > rank.indexOf(a) ? b : a), fallback);
 const uniq = (xs: string[]) => [...new Set(xs)];
@@ -147,10 +147,11 @@ export function checklistFor(req: SurgeryRequest, chart: ChartSummary | null): C
   }
   if (chart?.allergyStatus === "not on file") add("allergy-history", "Allergy history taken and entered in the chart", "The chart says allergies are not on file.");
   if (b.anesthesia === "General" || b.anesthesia === "MAC") add("anesthesia", "Pre-anesthesia evaluation booked", `${b.anesthesia} anesthesia.`);
-  if (b.admission === "Inpatient" || b.admission === "ICU") add("medical", "Medical/cardiac risk assessment if indicated", `${b.admission} case.`);
+  if (b.admission === "Admission (telemetry)" || b.admission === "Admission (ICU)") add("medical", "Medical/cardiac risk assessment if indicated", `${b.admission} after surgery.`);
   if (b.blood !== "None") add("blood", `${b.blood} within the blood bank window`, "Blood bank sample usually expires 72 h before the case.");
-  if (b.admission === "ICU") add("icu-bed", "ICU bed requested for after surgery", "Post-op ICU stay expected.");
-  if (b.admission === "Inpatient" || b.admission === "Overnight (23 h)") add("bed", "Post-op bed requested", `${b.admission} stay.`);
+  if (b.admission === "Admission (ICU)") add("icu-bed", "ICU bed requested for after surgery", "Post-op ICU admission.");
+  if (b.admission === "Admission (telemetry)") add("bed", "Telemetry bed requested for after surgery", "Post-op telemetry admission.");
+  if (b.admission === "23h observation") add("bed", "Observation bed requested for after surgery", "23-hour observation.");
   if (b.vendor) add("vendor", "Device ordered / vendor rep confirmed for the date", "One or more procedures need a device or rep.");
   if (req.priorAuth !== "Not required" && req.urgency !== "Emergent") add("auth", "Prior authorization started with the codes and diagnosis below", "Most payers need authorization for elective vascular procedures.");
   if (req.procedures.some((r) => procedureById(r.id)?.category === "Venous" && !procedureById(r.id)?.addOn)) add("venous-criteria", "Payer criteria documented (compression trial, reflux times, symptoms)", "Venous ablation coverage depends on documented conservative therapy.");

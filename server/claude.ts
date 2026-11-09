@@ -52,7 +52,7 @@ export const Interpretation = z.object({
   dateFrom: z.string().nullable().describe("YYYY-MM-DD. For 'within 2-3 weeks' use today as start with datePlan Between dates."),
   dateTo: z.string().nullable().describe("YYYY-MM-DD, only for Between dates."),
   anesthesia: z.enum(["General", "MAC", "Local/Sedation", NOT_STATED]).describe("A block or regional anesthetic counts as MAC; local with or without light sedation is Local/Sedation."),
-  admission: z.enum(["Outpatient", "Overnight (23 h)", "Inpatient", "ICU", NOT_STATED]),
+  admission: z.enum(["Outpatient", "23h observation", "Admission (telemetry)", "Admission (ICU)", NOT_STATED]).describe("Overnight stay is 23h observation; a floor or step-down admission is Admission (telemetry)."),
   equipment: z.array(z.string()).describe("Specific devices, grafts or equipment named in the text (e.g. 6 mm PTFE, specific endograft)."),
   vendorNotes: z.string().nullable().describe("Device company, product or size if stated."),
   medicationPlan: z.string().nullable().describe("Anticoagulant/antiplatelet hold or bridging plan exactly as the surgeon stated it, else null."),
@@ -71,7 +71,7 @@ function stated<T extends string>(v: string, allowed: readonly T[]): T | null {
 const URGENCIES = ["Elective", "Urgent", "Emergent"] as const;
 const DATE_PLANS = ["First available", "On date", "No later than", "Between dates"] as const;
 const ANESTHESIAS = ["General", "MAC", "Local/Sedation"] as const;
-const ADMISSIONS = ["Outpatient", "Overnight (23 h)", "Inpatient", "ICU"] as const;
+const ADMISSIONS = ["Outpatient", "23h observation", "Admission (telemetry)", "Admission (ICU)"] as const;
 const SIDES = ["Left", "Right", "Bilateral"] as const;
 const CONFIDENCE = ["high", "medium", "low"] as const;
 

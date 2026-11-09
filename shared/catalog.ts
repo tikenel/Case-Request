@@ -27,7 +27,7 @@ export type Category =
 /** Room type a procedure needs. Angio and catheter work is done in the Hybrid OR. */
 export type Setting = "Main OR" | "Hybrid OR";
 export type Anesthesia = "General" | "MAC" | "Local/Sedation";
-export type Admission = "Outpatient" | "Overnight (23 h)" | "Inpatient" | "ICU";
+export type Admission = "Outpatient" | "23h observation" | "Admission (telemetry)" | "Admission (ICU)";
 export type Blood = "None" | "Type & screen" | "Type & cross";
 
 export interface Procedure {
@@ -68,22 +68,22 @@ type Opts = Partial<Omit<Procedure, "id" | "cpt" | "name" | "category" | "synony
 
 // Defaults per category so each entry only states what differs.
 const BASE: Record<Category, Omit<Procedure, "id" | "cpt" | "name" | "category" | "synonyms">> = {
-  "Aortic – endovascular": { sided: false, addOn: false, setting: "Hybrid OR", anesthesia: "General", minutes: 180, admission: "Inpatient", contrast: true, blood: "Type & cross", imaging: ["CTA chest/abdomen/pelvis with thin cuts (for graft sizing)"], equipment: ["Fixed imaging or C-arm", "Endograft (sized from CTA)", "Large-bore sheaths", "Power injector"], vendor: true },
-  "Aortic – open": { sided: false, addOn: false, setting: "Main OR", anesthesia: "General", minutes: 300, admission: "ICU", contrast: false, blood: "Type & cross", imaging: ["CTA abdomen/pelvis"], equipment: ["Cell saver", "Aortic clamps and retractor system (Omni/Bookwalter)", "Aortic graft"], vendor: false },
-  "Thoracic aorta": { sided: false, addOn: false, setting: "Hybrid OR", anesthesia: "General", minutes: 240, admission: "ICU", contrast: true, blood: "Type & cross", imaging: ["CTA chest/abdomen/pelvis with thin cuts"], equipment: ["Fixed imaging", "Thoracic endograft (sized from CTA)", "Large-bore sheaths", "Spinal drain availability (discuss with anesthesia)"], vendor: true },
-  "Carotid & arch vessels": { sided: true, addOn: false, setting: "Main OR", anesthesia: "General", minutes: 150, admission: "Overnight (23 h)", contrast: false, blood: "Type & screen", imaging: ["Carotid duplex", "CTA or MRA neck"], equipment: ["Shunt available", "Patch (bovine pericardium or Dacron)", "Neuro-monitoring (EEG) if surgeon uses it"], vendor: false },
-  "Lower extremity – open": { sided: true, addOn: false, setting: "Main OR", anesthesia: "General", minutes: 240, admission: "Inpatient", contrast: false, blood: "Type & screen", imaging: ["Arterial duplex or angiogram/CTA runoff", "ABI/PVR"], equipment: ["C-arm for completion angiogram"], vendor: false },
+  "Aortic – endovascular": { sided: false, addOn: false, setting: "Hybrid OR", anesthesia: "General", minutes: 180, admission: "Admission (telemetry)", contrast: true, blood: "Type & cross", imaging: ["CTA chest/abdomen/pelvis with thin cuts (for graft sizing)"], equipment: ["Fixed imaging or C-arm", "Endograft (sized from CTA)", "Large-bore sheaths", "Power injector"], vendor: true },
+  "Aortic – open": { sided: false, addOn: false, setting: "Main OR", anesthesia: "General", minutes: 300, admission: "Admission (ICU)", contrast: false, blood: "Type & cross", imaging: ["CTA abdomen/pelvis"], equipment: ["Cell saver", "Aortic clamps and retractor system (Omni/Bookwalter)", "Aortic graft"], vendor: false },
+  "Thoracic aorta": { sided: false, addOn: false, setting: "Hybrid OR", anesthesia: "General", minutes: 240, admission: "Admission (ICU)", contrast: true, blood: "Type & cross", imaging: ["CTA chest/abdomen/pelvis with thin cuts"], equipment: ["Fixed imaging", "Thoracic endograft (sized from CTA)", "Large-bore sheaths", "Spinal drain availability (discuss with anesthesia)"], vendor: true },
+  "Carotid & arch vessels": { sided: true, addOn: false, setting: "Main OR", anesthesia: "General", minutes: 150, admission: "23h observation", contrast: false, blood: "Type & screen", imaging: ["Carotid duplex", "CTA or MRA neck"], equipment: ["Shunt available", "Patch (bovine pericardium or Dacron)", "Neuro-monitoring (EEG) if surgeon uses it"], vendor: false },
+  "Lower extremity – open": { sided: true, addOn: false, setting: "Main OR", anesthesia: "General", minutes: 240, admission: "Admission (telemetry)", contrast: false, blood: "Type & screen", imaging: ["Arterial duplex or angiogram/CTA runoff", "ABI/PVR"], equipment: ["C-arm for completion angiogram"], vendor: false },
   "Lower extremity – endovascular": { sided: true, addOn: false, setting: "Hybrid OR", anesthesia: "MAC", minutes: 120, admission: "Outpatient", contrast: true, blood: "None", imaging: ["ABI/PVR", "Arterial duplex or CTA runoff"], equipment: ["Fluoroscopy", "Balloons, stents and wires per surgeon preference"], vendor: false, verify: LER_2026 },
   "Angiography & catheter work": { sided: false, addOn: false, setting: "Hybrid OR", anesthesia: "MAC", minutes: 60, admission: "Outpatient", contrast: true, blood: "None", imaging: [], equipment: ["Fluoroscopy"], vendor: false },
-  "Visceral & renal": { sided: false, addOn: false, setting: "Hybrid OR", anesthesia: "General", minutes: 150, admission: "Inpatient", contrast: true, blood: "Type & screen", imaging: ["CTA abdomen with mesenteric/renal protocol"], equipment: ["Fluoroscopy", "Balloon-expandable covered stents per surgeon preference"], vendor: false },
-  "Thrombus & embolism": { sided: true, addOn: false, setting: "Hybrid OR", anesthesia: "General", minutes: 120, admission: "Inpatient", contrast: true, blood: "Type & screen", imaging: ["Arterial or venous duplex, or CTA"], equipment: ["Fluoroscopy", "Fogarty embolectomy catheters", "Mechanical thrombectomy system per surgeon preference"], vendor: false },
+  "Visceral & renal": { sided: false, addOn: false, setting: "Hybrid OR", anesthesia: "General", minutes: 150, admission: "Admission (telemetry)", contrast: true, blood: "Type & screen", imaging: ["CTA abdomen with mesenteric/renal protocol"], equipment: ["Fluoroscopy", "Balloon-expandable covered stents per surgeon preference"], vendor: false },
+  "Thrombus & embolism": { sided: true, addOn: false, setting: "Hybrid OR", anesthesia: "General", minutes: 120, admission: "Admission (telemetry)", contrast: true, blood: "Type & screen", imaging: ["Arterial or venous duplex, or CTA"], equipment: ["Fluoroscopy", "Fogarty embolectomy catheters", "Mechanical thrombectomy system per surgeon preference"], vendor: false },
   "Dialysis access – open": { sided: true, addOn: false, setting: "Main OR", anesthesia: "MAC", minutes: 90, admission: "Outpatient", contrast: false, blood: "None", imaging: ["Vein mapping (upper-extremity duplex)"], equipment: ["Ultrasound in room"], vendor: false },
   "Dialysis access – endovascular": { sided: true, addOn: false, setting: "Hybrid OR", anesthesia: "MAC", minutes: 60, admission: "Outpatient", contrast: true, blood: "None", imaging: ["Fistula/graft duplex if available"], equipment: ["Fluoroscopy", "High-pressure balloons"], vendor: false },
   "Central lines & catheters": { sided: true, addOn: false, setting: "Hybrid OR", anesthesia: "MAC", minutes: 45, admission: "Outpatient", contrast: false, blood: "None", imaging: [], equipment: ["Fluoroscopy", "Ultrasound"], vendor: false },
   "Venous": { sided: true, addOn: false, setting: "Hybrid OR", anesthesia: "Local/Sedation", minutes: 60, admission: "Outpatient", contrast: false, blood: "None", imaging: ["Venous reflux duplex (standing) within payer window"], equipment: ["Ultrasound"], vendor: false },
-  "Thoracic outlet": { sided: true, addOn: false, setting: "Main OR", anesthesia: "General", minutes: 180, admission: "Inpatient", contrast: false, blood: "Type & screen", imaging: ["Chest X-ray (cervical rib)", "Positional duplex or venogram/arteriogram as indicated"], equipment: ["Rib instruments (rib shears, rongeurs)"], vendor: false },
-  "Amputation & wound": { sided: true, addOn: false, setting: "Main OR", anesthesia: "General", minutes: 90, admission: "Inpatient", contrast: false, blood: "Type & screen", imaging: ["Arterial perfusion assessment (ABI/TBI or angiogram)"], equipment: ["Power saw"], vendor: false },
-  "Other vascular": { sided: false, addOn: false, setting: "Main OR", anesthesia: "General", minutes: 120, admission: "Inpatient", contrast: false, blood: "Type & screen", imaging: [], equipment: [], vendor: false },
+  "Thoracic outlet": { sided: true, addOn: false, setting: "Main OR", anesthesia: "General", minutes: 180, admission: "Admission (telemetry)", contrast: false, blood: "Type & screen", imaging: ["Chest X-ray (cervical rib)", "Positional duplex or venogram/arteriogram as indicated"], equipment: ["Rib instruments (rib shears, rongeurs)"], vendor: false },
+  "Amputation & wound": { sided: true, addOn: false, setting: "Main OR", anesthesia: "General", minutes: 90, admission: "Admission (telemetry)", contrast: false, blood: "Type & screen", imaging: ["Arterial perfusion assessment (ABI/TBI or angiogram)"], equipment: ["Power saw"], vendor: false },
+  "Other vascular": { sided: false, addOn: false, setting: "Main OR", anesthesia: "General", minutes: 120, admission: "Admission (telemetry)", contrast: false, blood: "Type & screen", imaging: [], equipment: [], vendor: false },
 };
 
 function make(category: Category) {
@@ -123,7 +123,7 @@ export const CATALOG: Procedure[] = [
   evar("34707", "Endovascular repair of iliac artery aneurysm, ilio-iliac endograft", ["iliac endograft", "iliac aneurysm stent graft"], { minutes: 150 }),
   evar("34708", "Endovascular repair of iliac artery, ilio-iliac endograft, for rupture", ["ruptured iliac endograft"], { minutes: 150 }),
   evar("34709", "Extension limb or cuff at the time of EVAR, each additional vessel", ["extension limb", "evar extension", "iliac extension"], ADD),
-  evar("34710", "Delayed proximal or distal extension of a prior endograft, first vessel", ["evar revision extension", "type 1 endoleak repair", "proximal cuff", "distal extension delayed"], { minutes: 120, admission: "Overnight (23 h)" }),
+  evar("34710", "Delayed proximal or distal extension of a prior endograft, first vessel", ["evar revision extension", "type 1 endoleak repair", "proximal cuff", "distal extension delayed"], { minutes: 120, admission: "23h observation" }),
   evar("34711", "Delayed extension of a prior endograft, each additional vessel", ["additional extension delayed"], ADD),
   evar("34712", "Endoanchor or other enhanced fixation device placement", ["endoanchors", "heli-fx", "staples endograft"], ADD),
   evar("34713", "Percutaneous large-bore (≥12 Fr) femoral access with closure, per side", ["perclose", "percutaneous access", "pevar access", "large bore access", "preclose"], { ...ADD, sided: true }),
@@ -132,14 +132,14 @@ export const CATALOG: Procedure[] = [
   evar("34833", "Open iliac exposure with creation of a conduit for endograft delivery, per side", ["iliac conduit", "conduit for evar"], { ...ADD, sided: true }),
   evar("34834", "Open brachial artery exposure for endovascular device delivery, per side", ["brachial cutdown", "brachial exposure"], { ...ADD, sided: true }),
   evar("34808", "Endovascular iliac artery occlusion device (plug)", ["iliac plug", "internal iliac embolization evar", "amplatzer plug iliac"], ADD),
-  evar("34841", "Fenestrated EVAR (FEVAR), visceral aorta, 1 visceral artery endoprosthesis", ["fevar 1 fenestration"], { minutes: 300, admission: "ICU" }),
-  evar("34842", "Fenestrated EVAR (FEVAR), visceral aorta, 2 visceral artery endoprostheses", ["fevar 2 fenestrations"], { minutes: 330, admission: "ICU" }),
-  evar("34843", "Fenestrated EVAR (FEVAR), visceral aorta, 3 visceral artery endoprostheses", ["fevar 3 fenestrations"], { minutes: 360, admission: "ICU" }),
-  evar("34844", "Fenestrated EVAR (FEVAR), visceral aorta, 4 or more visceral artery endoprostheses", ["fevar 4 fenestrations"], { minutes: 390, admission: "ICU" }),
-  evar("34845", "Fenestrated EVAR including infrarenal aorta, 1 visceral artery endoprosthesis", ["fevar", "zfen", "fenestrated evar", "fenestrated endograft"], { minutes: 300, admission: "ICU" }),
-  evar("34846", "Fenestrated EVAR including infrarenal aorta, 2 visceral artery endoprostheses", ["zfen 2", "fevar 2 vessel"], { minutes: 330, admission: "ICU" }),
-  evar("34847", "Fenestrated EVAR including infrarenal aorta, 3 visceral artery endoprostheses", ["fevar 3 vessel"], { minutes: 360, admission: "ICU" }),
-  evar("34848", "Fenestrated EVAR including infrarenal aorta, 4 or more visceral artery endoprostheses", ["fevar 4 vessel"], { minutes: 390, admission: "ICU" }),
+  evar("34841", "Fenestrated EVAR (FEVAR), visceral aorta, 1 visceral artery endoprosthesis", ["fevar 1 fenestration"], { minutes: 300, admission: "Admission (ICU)" }),
+  evar("34842", "Fenestrated EVAR (FEVAR), visceral aorta, 2 visceral artery endoprostheses", ["fevar 2 fenestrations"], { minutes: 330, admission: "Admission (ICU)" }),
+  evar("34843", "Fenestrated EVAR (FEVAR), visceral aorta, 3 visceral artery endoprostheses", ["fevar 3 fenestrations"], { minutes: 360, admission: "Admission (ICU)" }),
+  evar("34844", "Fenestrated EVAR (FEVAR), visceral aorta, 4 or more visceral artery endoprostheses", ["fevar 4 fenestrations"], { minutes: 390, admission: "Admission (ICU)" }),
+  evar("34845", "Fenestrated EVAR including infrarenal aorta, 1 visceral artery endoprosthesis", ["fevar", "zfen", "fenestrated evar", "fenestrated endograft"], { minutes: 300, admission: "Admission (ICU)" }),
+  evar("34846", "Fenestrated EVAR including infrarenal aorta, 2 visceral artery endoprostheses", ["zfen 2", "fevar 2 vessel"], { minutes: 330, admission: "Admission (ICU)" }),
+  evar("34847", "Fenestrated EVAR including infrarenal aorta, 3 visceral artery endoprostheses", ["fevar 3 vessel"], { minutes: 360, admission: "Admission (ICU)" }),
+  evar("34848", "Fenestrated EVAR including infrarenal aorta, 4 or more visceral artery endoprostheses", ["fevar 4 vessel"], { minutes: 390, admission: "Admission (ICU)" }),
 
   // ── Aortic, open ───────────────────────────────────────────────────────
   open("35081", "Open repair of infrarenal abdominal aortic aneurysm", ["open aaa", "open aaa repair", "aortic aneurysm open repair", "tube graft aaa", "transperitoneal aaa", "retroperitoneal aaa"]),
@@ -151,9 +151,9 @@ export const CATALOG: Procedure[] = [
   open("35131", "Open repair of iliac artery aneurysm", ["iliac aneurysm open"], { sided: true, minutes: 240 }),
   open("35646", "Aortobifemoral bypass", ["abf", "aorto-bifemoral bypass", "aortobifemoral", "aorto bifem"], { imaging: ["CTA abdomen/pelvis with runoff"] }),
   open("35647", "Aortofemoral bypass, single side", ["aortofemoral bypass", "aorto-femoral"], { sided: true, imaging: ["CTA abdomen/pelvis with runoff"] }),
-  open("35621", "Axillary-femoral bypass", ["ax-fem", "axfem", "axillofemoral"], { sided: true, minutes: 210, admission: "Inpatient", imaging: ["CTA or duplex of inflow and outflow"] }),
-  open("35654", "Axillary-bifemoral bypass", ["ax-bifem", "axillobifemoral", "ax bi fem"], { sided: true, minutes: 240, admission: "Inpatient", imaging: ["CTA or duplex of inflow and outflow"] }),
-  open("35661", "Femoral-femoral crossover bypass", ["fem-fem", "fem fem", "femorofemoral", "crossover bypass"], { minutes: 180, admission: "Inpatient", blood: "Type & screen", imaging: ["CTA runoff or angiogram"] }),
+  open("35621", "Axillary-femoral bypass", ["ax-fem", "axfem", "axillofemoral"], { sided: true, minutes: 210, admission: "Admission (telemetry)", imaging: ["CTA or duplex of inflow and outflow"] }),
+  open("35654", "Axillary-bifemoral bypass", ["ax-bifem", "axillobifemoral", "ax bi fem"], { sided: true, minutes: 240, admission: "Admission (telemetry)", imaging: ["CTA or duplex of inflow and outflow"] }),
+  open("35661", "Femoral-femoral crossover bypass", ["fem-fem", "fem fem", "femorofemoral", "crossover bypass"], { minutes: 180, admission: "Admission (telemetry)", blood: "Type & screen", imaging: ["CTA runoff or angiogram"] }),
   open("35907", "Excision of infected aortic or abdominal graft", ["infected aortic graft explant", "aortic graft explant"], { minutes: 360 }),
 
   // ── Thoracic aorta ─────────────────────────────────────────────────────
@@ -181,7 +181,7 @@ export const CATALOG: Procedure[] = [
   car("60605", "Excision of carotid body tumor with excision of carotid artery", ["carotid body tumor with carotid resection"], { minutes: 240, imaging: ["CTA or MRI neck"] }),
 
   // ── Lower extremity, open ─────────────────────────────────────────────
-  leo("35371", "Common femoral endarterectomy", ["femoral endarterectomy", "cfa endarterectomy", "fem tea", "cfe", "groin endarterectomy", "femoral cleanout"], { minutes: 150, admission: "Overnight (23 h)" }),
+  leo("35371", "Common femoral endarterectomy", ["femoral endarterectomy", "cfa endarterectomy", "fem tea", "cfe", "groin endarterectomy", "femoral cleanout"], { minutes: 150, admission: "23h observation" }),
   leo("35372", "Profunda (deep femoral) endarterectomy", ["profundaplasty", "profunda endarterectomy", "deep femoral endarterectomy"], { minutes: 150 }),
   leo("35556", "Femoral-popliteal bypass with vein", ["fem-pop vein", "fem pop bypass vein", "femoropopliteal bypass gsv", "fem-pop with saphenous vein", "above knee fem pop vein", "below knee fem pop vein"], { imaging: ["Arterial duplex or angiogram/CTA runoff", "Vein mapping (GSV duplex)"] }),
   leo("35656", "Femoral-popliteal bypass with prosthetic graft", ["fem-pop ptfe", "fem pop bypass", "femoropopliteal bypass", "fem-pop graft", "above knee fem pop", "ak fem pop", "fem pop prosthetic"], { minutes: 180, equipment: ["C-arm for completion angiogram", "PTFE/Dacron graft"] }),
@@ -235,14 +235,14 @@ export const CATALOG: Procedure[] = [
   ang("37242", "Arterial embolization (not for hemorrhage or tumor)", ["arterial embolization", "endoleak embolization", "aneurysm embolization", "coil embolization artery", "type 2 endoleak embolization"], { minutes: 120, vendor: true }),
   ang("37243", "Embolization for tumor, organ ischemia or infarction", ["tumor embolization", "organ embolization"], { minutes: 120 }),
   ang("37244", "Embolization for hemorrhage or lymphatic leak", ["bleeding embolization", "hemorrhage embolization", "lymphatic embolization"], { minutes: 120 }),
-  ang("37236", "Stent in an artery other than leg, carotid or coronary, first artery", ["subclavian stent", "renal stent", "sma stent", "mesenteric stent", "innominate stent", "visceral stent", "covered stent branch"], { minutes: 120, admission: "Overnight (23 h)" }),
+  ang("37236", "Stent in an artery other than leg, carotid or coronary, first artery", ["subclavian stent", "renal stent", "sma stent", "mesenteric stent", "innominate stent", "visceral stent", "covered stent branch"], { minutes: 120, admission: "23h observation" }),
   ang("37237", "Stent in another such artery, each additional", ["additional visceral stent"], ADD),
   ang("37246", "Angioplasty of an artery other than leg, carotid or coronary, first artery", ["subclavian angioplasty", "renal angioplasty", "visceral angioplasty", "brachial angioplasty"], { minutes: 90 }),
   ang("37247", "Angioplasty of another such artery, each additional", ["additional arterial angioplasty"], ADD),
 
   // ── Visceral and renal (open) ─────────────────────────────────────────
-  vis("35531", "Aorto-celiac or aorto-mesenteric bypass with vein", ["mesenteric bypass vein", "aorto-sma bypass vein"], { setting: "Main OR", minutes: 300, admission: "ICU", contrast: false, equipment: ["Cell saver"] }),
-  vis("35631", "Aorto-celiac, aorto-mesenteric or aorto-renal bypass with prosthetic graft", ["mesenteric bypass", "aorto-sma bypass", "aortorenal bypass", "visceral bypass"], { setting: "Main OR", minutes: 300, admission: "ICU", contrast: false, equipment: ["Cell saver", "Prosthetic graft"] }),
+  vis("35531", "Aorto-celiac or aorto-mesenteric bypass with vein", ["mesenteric bypass vein", "aorto-sma bypass vein"], { setting: "Main OR", minutes: 300, admission: "Admission (ICU)", contrast: false, equipment: ["Cell saver"] }),
+  vis("35631", "Aorto-celiac, aorto-mesenteric or aorto-renal bypass with prosthetic graft", ["mesenteric bypass", "aorto-sma bypass", "aortorenal bypass", "visceral bypass"], { setting: "Main OR", minutes: 300, admission: "Admission (ICU)", contrast: false, equipment: ["Cell saver", "Prosthetic graft"] }),
 
   // ── Thrombus and embolism ─────────────────────────────────────────────
   thr("34201", "Femoral or popliteal embolectomy/thrombectomy through a groin incision", ["femoral embolectomy", "fogarty embolectomy", "leg embolectomy", "acute limb ischemia embolectomy", "ali thrombectomy groin"]),
@@ -254,10 +254,10 @@ export const CATALOG: Procedure[] = [
   thr("37186", "Secondary mechanical thrombectomy during another endovascular procedure", ["secondary thrombectomy", "distal embolus aspiration"], ADD),
   thr("37187", "Percutaneous mechanical venous thrombectomy", ["venous thrombectomy", "dvt thrombectomy", "clottriever", "clot triever", "angiojet vein", "iliofemoral dvt thrombectomy", "mechanical thrombectomy dvt"], { setting: "Hybrid OR", anesthesia: "MAC", minutes: 120, vendor: true, imaging: ["Venous duplex or CT venogram"] }),
   thr("37188", "Repeat mechanical venous thrombectomy on a later day", ["repeat venous thrombectomy"], { setting: "Hybrid OR", anesthesia: "MAC", minutes: 90 }),
-  thr("37211", "Catheter-directed arterial thrombolysis, first day", ["arterial thrombolysis", "cdt artery", "tpa infusion artery", "lysis catheter artery"], { setting: "Hybrid OR", anesthesia: "MAC", admission: "ICU" }),
-  thr("37212", "Catheter-directed venous thrombolysis, first day", ["venous thrombolysis", "cdt dvt", "catheter directed thrombolysis vein", "ekos", "paget schroetter lysis"], { setting: "Hybrid OR", anesthesia: "MAC", admission: "ICU", imaging: ["Venous duplex or CT venogram"] }),
-  thr("37213", "Thrombolysis, later day (with or without stopping)", ["lysis check", "lysis follow-up"], { setting: "Hybrid OR", anesthesia: "MAC", minutes: 60, admission: "ICU" }),
-  thr("37214", "Thrombolysis, final day with cessation", ["stop lysis", "lysis completion"], { setting: "Hybrid OR", anesthesia: "MAC", minutes: 60, admission: "ICU" }),
+  thr("37211", "Catheter-directed arterial thrombolysis, first day", ["arterial thrombolysis", "cdt artery", "tpa infusion artery", "lysis catheter artery"], { setting: "Hybrid OR", anesthesia: "MAC", admission: "Admission (ICU)" }),
+  thr("37212", "Catheter-directed venous thrombolysis, first day", ["venous thrombolysis", "cdt dvt", "catheter directed thrombolysis vein", "ekos", "paget schroetter lysis"], { setting: "Hybrid OR", anesthesia: "MAC", admission: "Admission (ICU)", imaging: ["Venous duplex or CT venogram"] }),
+  thr("37213", "Thrombolysis, later day (with or without stopping)", ["lysis check", "lysis follow-up"], { setting: "Hybrid OR", anesthesia: "MAC", minutes: 60, admission: "Admission (ICU)" }),
+  thr("37214", "Thrombolysis, final day with cessation", ["stop lysis", "lysis completion"], { setting: "Hybrid OR", anesthesia: "MAC", minutes: 60, admission: "Admission (ICU)" }),
   thr("34421", "Open venous thrombectomy, iliac/femoral/popliteal, through a leg incision", ["open venous thrombectomy", "iliofemoral venous thrombectomy open"], { minutes: 180 }),
   thr("27602", "Fasciotomy of the leg, anterior/lateral and posterior compartments", ["four compartment fasciotomy", "4 compartment fasciotomy", "leg fasciotomy", "fasciotomy"], { setting: "Main OR", contrast: false, minutes: 60, equipment: [] }),
 
@@ -348,7 +348,7 @@ export const CATALOG: Procedure[] = [
   // ── Other vascular ────────────────────────────────────────────────────
   oth("35860", "Exploration for postoperative bleeding, thrombosis or infection, extremity", ["groin exploration", "wound exploration bleeding", "hematoma evacuation extremity", "return to or groin"], { sided: true, minutes: 60 }),
   oth("35800", "Exploration for postoperative bleeding, thrombosis or infection, neck", ["neck exploration", "neck hematoma evacuation", "post cea hematoma"], { minutes: 60 }),
-  oth("35840", "Exploration for postoperative bleeding, thrombosis or infection, abdomen", ["abdominal exploration bleeding", "re-look laparotomy vascular"], { minutes: 120, admission: "ICU" }),
+  oth("35840", "Exploration for postoperative bleeding, thrombosis or infection, abdomen", ["abdominal exploration bleeding", "re-look laparotomy vascular"], { minutes: 120, admission: "Admission (ICU)" }),
   oth("37609", "Temporal artery biopsy", ["temporal artery biopsy", "tab", "giant cell arteritis biopsy"], { sided: true, setting: "Hybrid OR", anesthesia: "Local/Sedation", minutes: 45, admission: "Outpatient", blood: "None", verify: "Pathology must know it is a temporal artery specimen (GCA protocol)." }),
 ];
 
