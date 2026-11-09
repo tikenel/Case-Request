@@ -195,12 +195,17 @@ Angio, endovascular and venous procedures default to the Hybrid OR, which is
 also the angio room; there are no office-lab or procedure rooms. The clinician
 can change the site for any case.
 
+Main OR cases have a **C-arm / completion angiogram** tick box, off by
+default, under Location. Ticking it adds the C-arm to the scheduler's
+equipment list. The Hybrid OR has fixed imaging, so the box doesn't appear
+there.
+
 ## Contrast allergy
 
 When the chart has a contrast allergy and the case may use contrast, a red
 prompt appears under the procedures: **"Contrast allergy: order
-premedication."** That covers contrast procedures and open cases with a C-arm
-completion angiogram, such as a bypass. The clinician orders the premedication
+premedication."** That covers contrast procedures, and Main OR cases where
+the C-arm option is ticked. The clinician orders the premedication
 in Epic, then ticks **Premedication ordered** (with an optional regimen) or
 **No contrast will be used**. The request can't be sent until one is ticked,
 and the scheduler sheet shows which.

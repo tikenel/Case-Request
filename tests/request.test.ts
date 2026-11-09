@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEMO_CHART } from "../shared/demo";
 import { noteResource, serviceRequests } from "../shared/fhirOut";
-import { booking, checklistFor, needsPremedPrompt, derive, emptyRequest, packetText, postingLine, validate, type SurgeryRequest } from "../shared/request";
+import { booking, CARM, checklistFor, needsPremedPrompt, derive, emptyRequest, packetText, postingLine, validate, type SurgeryRequest } from "../shared/request";
 import { plansFor } from "../shared/meds";
 import { applySuggestion, defaultAccepted, offlineSuggestion, type Suggestion } from "../shared/suggestion";
 
@@ -41,11 +41,20 @@ describe("locations", () => {
   });
 });
 
+describe("C-arm", () => {
+  it("is off by default in the Main OR, adds the C-arm when ticked, and isn't needed in the Hybrid OR", () => {
+    expect(booking(base()).equipment).not.toContain(CARM);
+    expect(booking(base({ carm: true })).equipment[0]).toBe(CARM);
+    expect(booking(base({ carm: true, location: "Hybrid OR" })).equipment).not.toContain(CARM);
+  });
+});
+
 describe("contrast allergy premedication", () => {
   // DEMO_CHART has an iodinated contrast allergy.
   it("prompts for contrast cases and open cases with a completion angiogram, not otherwise", () => {
     expect(needsPremedPrompt(base({ procedures: [{ id: "37226", side: "Right", note: "" }] }), DEMO_CHART)).toBe(true);
-    expect(needsPremedPrompt(base(), DEMO_CHART)).toBe(true); // fem-pop bypass: C-arm completion angiogram
+    expect(needsPremedPrompt(base(), DEMO_CHART)).toBe(false); // open fem-pop bypass: no C-arm by default
+    expect(needsPremedPrompt(base({ carm: true }), DEMO_CHART)).toBe(true); // C-arm ticked: completion angiogram
     expect(needsPremedPrompt(base({ procedures: [{ id: "27880", side: "Left", note: "" }] }), DEMO_CHART)).toBe(false); // BKA
     expect(needsPremedPrompt(base({ procedures: [{ id: "37226", side: "Right", note: "" }] }), { ...DEMO_CHART, allergies: [] })).toBe(false);
   });

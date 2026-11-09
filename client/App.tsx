@@ -560,6 +560,9 @@ function Booking({ req, set, team, chart }: { req: SurgeryRequest; set: Setter; 
             <option value="">{req.procedures.length ? `${defaultLocation(b.setting)} (default)` : "Choose a location…"}</option>
             {LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
           </select>
+          {req.procedures.length > 0 && b.location !== "Hybrid OR" && (
+            <label className="tick"><input type="checkbox" checked={req.carm} onChange={(e) => set("carm", e.target.checked)} /> C-arm / completion angiogram</label>
+          )}
         </div>
         {pick<Anesthesia>("Anesthesia", "anesthesia", ["General", "MAC", "Local/Sedation"], b.anesthesia)}
         {pick<Admission>("After surgery", "admission", ["Outpatient", "23h observation", "Admission (telemetry)", "Admission (ICU)"], b.admission)}

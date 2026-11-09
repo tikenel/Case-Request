@@ -36,6 +36,8 @@ export interface SurgeryRequest {
   checklist: CheckItem[];
   /** Continue/hold decisions for anticoagulants, antiplatelets and kidney-risk drugs on file. */
   medPlans: MedPlan[];
+  /** C-arm requested for a Main OR case (e.g. completion angiogram). The Hybrid OR has fixed imaging. */
+  carm: boolean;
   /** Contrast allergy on file and the case may use contrast: premedication ordered, or no contrast planned. */
   premed: { status: "ordered" | "no contrast" | null; regimen: string };
   schedulerNotes: string;
@@ -62,6 +64,7 @@ export function emptyRequest(user: string | null): SurgeryRequest {
     priorAuth: "Unknown",
     checklist: [],
     medPlans: [],
+    carm: false,
     premed: { status: null, regimen: "" },
     schedulerNotes: "",
     source: "",
@@ -74,6 +77,8 @@ const ADMIT_RANK: Admission[] = ["Outpatient", "23h observation", "Admission (te
 const BLOOD_RANK: Blood[] = ["None", "Type & screen", "Type & cross"];
 const top = <T>(rank: T[], vals: T[], fallback: T) => vals.reduce((a, b) => (rank.indexOf(b) > rank.indexOf(a) ? b : a), fallback);
 const uniq = (xs: string[]) => [...new Set(xs)];
+
+export const CARM = "C-arm for completion angiogram";
 
 /** Minutes an add-on adds to the booking when listed with its primary. */
 export const ADD_ON_MINUTES = 20;
@@ -122,6 +127,7 @@ export function booking(req: SurgeryRequest) {
   return {
     ...d,
     location: req.location ?? defaultLocation(d.setting),
+    equipment: req.carm && (req.location ?? defaultLocation(d.setting)) !== "Hybrid OR" ? [CARM, ...d.equipment] : d.equipment,
     anesthesia: req.anesthesia ?? d.anesthesia,
     minutes: req.minutes ?? d.minutes,
     admission: req.admission ?? d.admission,
