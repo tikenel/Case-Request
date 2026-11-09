@@ -22,7 +22,7 @@ describe("booking defaults", () => {
     expect(d.vendor).toBe(true);
     const two = derive({ procedures: [{ id: "35371", side: "Right", note: "" }, { id: "37221", side: "Right", note: "" }] });
     expect(two.minutes).toBe(210); // 150 + 120/2
-    expect(two.setting).toBe("Main OR");
+    expect(two.setting).toBe("Hybrid OR"); // the iliac stent needs imaging, so the Hybrid OR wins
   });
   it("lets the clinician override defaults", () => {
     expect(booking(base({ minutes: 240, anesthesia: "Regional" }))).toMatchObject({ minutes: 240, anesthesia: "Regional", setting: "Main OR", location: "UMH Main OR" });
@@ -30,15 +30,14 @@ describe("booking defaults", () => {
 });
 
 describe("locations", () => {
-  it("defaults OR cases and makes the clinician pick a site for angio and office cases", () => {
+  it("defaults open cases to UMH Main OR and angio/endovascular cases to the Hybrid OR", () => {
     expect(booking(base()).location).toBe("UMH Main OR");
     expect(booking(base({ procedures: [{ id: "34705", side: null, note: "" }] })).location).toBe("Hybrid OR");
     const angio = base({ procedures: [{ id: "37224", side: "Right", note: "" }] });
-    expect(booking(angio).location).toBeNull();
-    expect(validate(angio, today).some((i) => i.field === "location" && i.level === "error")).toBe(true);
+    expect(booking(angio).location).toBe("Hybrid OR");
+    expect(booking(base({ procedures: [{ id: "36475", side: "Left", note: "" }] })).location).toBe("Hybrid OR"); // vein ablation: no office lab
     const chosen = { ...angio, location: "Doral" as const };
-    expect(validate(chosen, today).some((i) => i.field === "location")).toBe(false);
-    expect(packetText(chosen, null)).toContain("Location: Doral · Angio/IR suite");
+    expect(packetText(chosen, null)).toContain("Location: Doral");
   });
 });
 

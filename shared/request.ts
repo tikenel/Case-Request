@@ -5,7 +5,7 @@ import { procedureById, type Admission, type Anesthesia, type Blood, type Proced
 import type { ChartSummary } from "./chart.js";
 import type { Side } from "./match.js";
 import { CLASS_LABEL, planLine, type MedPlan } from "./meds.js";
-import { defaultLocation, roomNote, type Location } from "./locations.js";
+import { defaultLocation, type Location } from "./locations.js";
 
 export type Urgency = "Elective" | "Urgent" | "Emergent";
 export type DatePlan = "First available" | "On date" | "No later than" | "Between dates";
@@ -65,7 +65,7 @@ export function emptyRequest(user: string | null): SurgeryRequest {
   };
 }
 
-const SETTING_RANK: Setting[] = ["Office-based lab", "Procedure room", "Angio/IR suite", "Main OR", "Hybrid OR"];
+const SETTING_RANK: Setting[] = ["Main OR", "Hybrid OR"];
 const ANES_RANK: Anesthesia[] = ["Local", "MAC/sedation", "Regional", "General"];
 const ADMIT_RANK: Admission[] = ["Outpatient", "Overnight (23 h)", "Inpatient", "ICU"];
 const BLOOD_RANK: Blood[] = ["None", "Type & screen", "Type & cross"];
@@ -94,7 +94,7 @@ export function derive(req: Pick<SurgeryRequest, "procedures">): Derived {
   const primaries = procs.filter((p) => !p.addOn);
   return {
     procedures: procs,
-    setting: top(SETTING_RANK, procs.map((p) => p.setting), "Office-based lab"),
+    setting: top(SETTING_RANK, procs.map((p) => p.setting), "Main OR"),
     anesthesia: top(ANES_RANK, procs.map((p) => p.anesthesia), "Local"),
     minutes: bookingMinutes(primaries, procs.length - primaries.length),
     admission: top(ADMIT_RANK, procs.map((p) => p.admission), "Outpatient"),
@@ -196,7 +196,7 @@ export function validate(req: SurgeryRequest, today = new Date()): Issue[] {
   if (req.urgency === "Emergent") warn("urgency", "Emergent: call the OR desk directly as well as sending this request.");
 
   const b = booking(req);
-  if (req.procedures.length && !b.location) err("location", "Choose the location (UMH Main OR, Hybrid OR, Sole Mia, Lennar or Doral).");
+  if (req.procedures.length && !b.location) err("location", "Choose the location.");
   if (b.vendor && !req.vendorNotes.trim()) warn("vendor", "A device or vendor rep is needed. Add the device, size or company if known.");
   if (req.urgency !== "Emergent" && req.priorAuth === "Unknown") warn("auth", "Say whether prior authorization is needed.");
   for (const m of req.medPlans) {
@@ -257,7 +257,7 @@ export function schedulerPacket(req: SurgeryRequest, chart: ChartSummary | null)
     {
       title: "4. Room and time",
       lines: [
-        `Location: ${b.location ?? "not chosen"}${roomNote(b.location, b.setting) ? ` · ${roomNote(b.location, b.setting)}` : ""}`,
+        `Location: ${b.location ?? "not chosen"}`,
         `Book ${b.minutes} minutes${req.minutes === null ? " (typical; surgeon may adjust)" : ""}`,
         `Anesthesia: ${b.anesthesia}`,
         `After surgery: ${b.admission}`,

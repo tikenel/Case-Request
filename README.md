@@ -190,11 +190,10 @@ app runs with AI off. Host the server under a BAA when AI is wanted.
 ## Locations
 
 Cases can be booked at **UMH Main OR, Hybrid OR, Sole Mia, Lennar or Doral**.
-The list is in `shared/locations.ts`. Main OR procedures default to UMH Main
-OR and hybrid procedures to Hybrid OR. Angio/IR, office-lab and procedure-room
-cases have no default, so the clinician must pick the site before sending. The
-scheduler sheet shows the room type when the site name doesn't make it obvious
-("Doral · Angio/IR suite").
+The list is in `shared/locations.ts`. Open cases default to UMH Main OR.
+Angio, endovascular and venous procedures default to the Hybrid OR, which is
+also the angio room; there are no office-lab or procedure rooms. The clinician
+can change the site for any case.
 
 ## Medications and medical history
 

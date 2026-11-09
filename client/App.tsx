@@ -11,7 +11,7 @@ import { applySuggestion, defaultAccepted, offlineSuggestion, type Accepted, typ
 import { defaultPeople, matchMember, surgeonChoices, type TeamMember } from "../shared/team";
 import { CLASS_LABEL, lastDoseDate, matchesFavorite, plansFor, withFavorite, withoutFavorite, type Favorites, type MedPlan } from "../shared/meds";
 import { loadFavorites, saveFavorites } from "./favorites";
-import { defaultLocation, LOCATIONS, roomNote, type Location } from "../shared/locations";
+import { defaultLocation, LOCATIONS, type Location } from "../shared/locations";
 import { formatWhen, stages, type Tracking } from "../shared/tracking";
 import {
   aiHeaders, fileNote, loadBoard, loadChart, loadTeam, loadTracking, readNote, sendOrders, TRACKING_LIST, WRITE_NOTE, WRITE_ORDERS,
@@ -535,10 +535,9 @@ function Booking({ req, set, team, chart }: { req: SurgeryRequest; set: Setter; 
         <div className="field">
           <label>Location</label>
           <select className={req.procedures.length && !b.location ? "missing" : ""} value={req.location ?? ""} onChange={(e) => set("location", (e.target.value || null) as Location | null)}>
-            <option value="">{defaultLocation(b.setting) ? `${defaultLocation(b.setting)} (default)` : "Choose a location…"}</option>
+            <option value="">{req.procedures.length ? `${defaultLocation(b.setting)} (default)` : "Choose a location…"}</option>
             {LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
           </select>
-          {req.procedures.length > 0 && roomNote(b.location, b.setting) && <p className="hint">Room needed: {b.setting}</p>}
         </div>
         {pick<Anesthesia>("Anesthesia", "anesthesia", ["General", "MAC/sedation", "Regional", "Local"], b.anesthesia)}
         {pick<Admission>("After surgery", "admission", ["Outpatient", "Overnight (23 h)", "Inpatient", "ICU"], b.admission)}
