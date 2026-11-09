@@ -91,6 +91,8 @@ select.missing { outline: 2px solid var(--bad); outline-offset: 1px; }
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 14px; }
 .grid.two { grid-template-columns: 1fr 1fr; }
 .field select, .field input { width: 100%; }
+.field input[type=checkbox], .field input[type=radio] { width: auto; }
+.field .tick { margin-top: 6px; }
 .equip { margin: 0; padding-left: 18px; columns: 2; }
 
 .checklist { list-style: none; padding: 0; margin: 0; }
