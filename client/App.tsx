@@ -11,6 +11,7 @@ import { applySuggestion, defaultAccepted, offlineSuggestion, type Accepted, typ
 import { defaultPeople, matchMember, surgeonChoices, type TeamMember } from "../shared/team";
 import { CLASS_LABEL, lastDoseDate, matchesFavorite, plansFor, withFavorite, withoutFavorite, type Favorites, type MedPlan } from "../shared/meds";
 import { loadFavorites, saveFavorites } from "./favorites";
+import { defaultLocation, LOCATIONS, roomNote, type Location } from "../shared/locations";
 import { formatWhen, stages, type Tracking } from "../shared/tracking";
 import {
   aiHeaders, fileNote, loadBoard, loadChart, loadTeam, loadTracking, readNote, sendOrders, TRACKING_LIST, WRITE_NOTE, WRITE_ORDERS,
@@ -519,7 +520,7 @@ function Booking({ req, set, team, chart }: { req: SurgeryRequest; set: Setter; 
   const [other, setOther] = useState(false);
   const typed = other || (!!req.surgeon && !choices.includes(req.surgeon));
   const me = matchMember(chart.signedIn, team);
-  const pick = <T extends string>(label: string, key: "setting" | "anesthesia" | "admission", options: T[], derived: T) => (
+  const pick = <T extends string>(label: string, key: "anesthesia" | "admission", options: T[], derived: T) => (
     <div className="field">
       <label>{label}</label>
       <select value={(req[key] as string | null) ?? ""} onChange={(e) => set(key, (e.target.value || null) as never)}>
@@ -531,7 +532,14 @@ function Booking({ req, set, team, chart }: { req: SurgeryRequest; set: Setter; 
   return (
     <Section n={6} title="Room, time and equipment" hint="Defaults come from the procedures. Change anything that's different for this patient.">
       <div className="grid">
-        {pick<Setting>("Location", "setting", ["Main OR", "Hybrid OR", "Angio/IR suite", "Office-based lab", "Procedure room"], b.setting)}
+        <div className="field">
+          <label>Location</label>
+          <select className={req.procedures.length && !b.location ? "missing" : ""} value={req.location ?? ""} onChange={(e) => set("location", (e.target.value || null) as Location | null)}>
+            <option value="">{defaultLocation(b.setting) ? `${defaultLocation(b.setting)} (default)` : "Choose a location…"}</option>
+            {LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
+          </select>
+          {req.procedures.length > 0 && roomNote(b.location, b.setting) && <p className="hint">Room needed: {b.setting}</p>}
+        </div>
         {pick<Anesthesia>("Anesthesia", "anesthesia", ["General", "MAC/sedation", "Regional", "Local"], b.anesthesia)}
         {pick<Admission>("After surgery", "admission", ["Outpatient", "Overnight (23 h)", "Inpatient", "ICU"], b.admission)}
         <div className="field">

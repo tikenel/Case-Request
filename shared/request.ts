@@ -5,6 +5,7 @@ import { procedureById, type Admission, type Anesthesia, type Blood, type Proced
 import type { ChartSummary } from "./chart.js";
 import type { Side } from "./match.js";
 import { CLASS_LABEL, planLine, type MedPlan } from "./meds.js";
+import { defaultLocation, roomNote, type Location } from "./locations.js";
 
 export type Urgency = "Elective" | "Urgent" | "Emergent";
 export type DatePlan = "First available" | "On date" | "No later than" | "Between dates";
@@ -24,7 +25,8 @@ export interface SurgeryRequest {
   dateFrom: string;
   dateTo: string;
   /** Booking details. null means "use the default derived from the procedures". */
-  setting: Setting | null;
+  /** Booking site (UMH Main OR, Hybrid OR, Sole Mia, Lennar, Doral). null: use the default for the procedures. */
+  location: Location | null;
   anesthesia: Anesthesia | null;
   minutes: number | null;
   admission: Admission | null;
@@ -49,7 +51,7 @@ export function emptyRequest(user: string | null): SurgeryRequest {
     datePlan: "First available",
     dateFrom: "",
     dateTo: "",
-    setting: null,
+    location: null,
     anesthesia: null,
     minutes: null,
     admission: null,
@@ -116,7 +118,7 @@ export function booking(req: SurgeryRequest) {
   const d = derive(req);
   return {
     ...d,
-    setting: req.setting ?? d.setting,
+    location: req.location ?? defaultLocation(d.setting),
     anesthesia: req.anesthesia ?? d.anesthesia,
     minutes: req.minutes ?? d.minutes,
     admission: req.admission ?? d.admission,
@@ -194,6 +196,7 @@ export function validate(req: SurgeryRequest, today = new Date()): Issue[] {
   if (req.urgency === "Emergent") warn("urgency", "Emergent: call the OR desk directly as well as sending this request.");
 
   const b = booking(req);
+  if (req.procedures.length && !b.location) err("location", "Choose the location (UMH Main OR, Hybrid OR, Sole Mia, Lennar or Doral).");
   if (b.vendor && !req.vendorNotes.trim()) warn("vendor", "A device or vendor rep is needed. Add the device, size or company if known.");
   if (req.urgency !== "Emergent" && req.priorAuth === "Unknown") warn("auth", "Say whether prior authorization is needed.");
   for (const m of req.medPlans) {
@@ -254,7 +257,7 @@ export function schedulerPacket(req: SurgeryRequest, chart: ChartSummary | null)
     {
       title: "4. Room and time",
       lines: [
-        `Location: ${b.setting}`,
+        `Location: ${b.location ?? "not chosen"}${roomNote(b.location, b.setting) ? ` · ${roomNote(b.location, b.setting)}` : ""}`,
         `Book ${b.minutes} minutes${req.minutes === null ? " (typical; surgeon may adjust)" : ""}`,
         `Anesthesia: ${b.anesthesia}`,
         `After surgery: ${b.admission}`,
@@ -314,7 +317,7 @@ export function postingLine(req: SurgeryRequest): string {
     .map((r) => ({ r, p: procedureById(r.id)! }))
     .filter(({ p }) => p && !p.addOn)
     .map(({ r, p }) => `${sideLabel(p, r.side)}${p.name} (${p.cpt})`);
-  return [procs.join(" + "), b.anesthesia, `${b.minutes} min`, b.setting].filter(Boolean).join(" · ");
+  return [procs.join(" + "), b.anesthesia, `${b.minutes} min`, b.location].filter(Boolean).join(" · ");
 }
 
 export function packetText(req: SurgeryRequest, chart: ChartSummary | null): string {

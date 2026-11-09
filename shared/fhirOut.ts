@@ -54,7 +54,7 @@ export function serviceRequests(req: SurgeryRequest, chart: ChartSummary, requis
       ...(chart.encounterId ? { encounter: { reference: `Encounter/${chart.encounterId}` } } : {}),
       ...(period ? { occurrencePeriod: period } : {}),
       reasonCode: req.diagnoses.map((d) => ({ coding: [{ system: ICD10_SYSTEM, code: d.code, display: d.display }], text: d.display })),
-      note: [{ text: `${dateLine(req)}. ${b.setting}, ${b.anesthesia}, ${b.minutes} min, ${b.admission}.${r.note ? ` ${r.note}` : ""}` }],
+      note: [{ text: `${dateLine(req)}. ${b.location ?? b.setting}, ${b.anesthesia}, ${b.minutes} min, ${b.admission}.${r.note ? ` ${r.note}` : ""}` }],
     };
   });
 }

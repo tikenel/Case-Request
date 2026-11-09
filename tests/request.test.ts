@@ -25,7 +25,20 @@ describe("booking defaults", () => {
     expect(two.setting).toBe("Main OR");
   });
   it("lets the clinician override defaults", () => {
-    expect(booking(base({ minutes: 240, anesthesia: "Regional" }))).toMatchObject({ minutes: 240, anesthesia: "Regional", setting: "Main OR" });
+    expect(booking(base({ minutes: 240, anesthesia: "Regional" }))).toMatchObject({ minutes: 240, anesthesia: "Regional", setting: "Main OR", location: "UMH Main OR" });
+  });
+});
+
+describe("locations", () => {
+  it("defaults OR cases and makes the clinician pick a site for angio and office cases", () => {
+    expect(booking(base()).location).toBe("UMH Main OR");
+    expect(booking(base({ procedures: [{ id: "34705", side: null, note: "" }] })).location).toBe("Hybrid OR");
+    const angio = base({ procedures: [{ id: "37224", side: "Right", note: "" }] });
+    expect(booking(angio).location).toBeNull();
+    expect(validate(angio, today).some((i) => i.field === "location" && i.level === "error")).toBe(true);
+    const chosen = { ...angio, location: "Doral" as const };
+    expect(validate(chosen, today).some((i) => i.field === "location")).toBe(false);
+    expect(packetText(chosen, null)).toContain("Location: Doral · Angio/IR suite");
   });
 });
 
@@ -75,7 +88,7 @@ describe("validation", () => {
 describe("scheduler sheet and FHIR", () => {
   it("writes the posting line and packet", () => {
     const r = base();
-    expect(postingLine(r)).toBe("RIGHT Femoral-popliteal bypass with prosthetic graft (35656) · General · 180 min · Main OR");
+    expect(postingLine(r)).toBe("RIGHT Femoral-popliteal bypass with prosthetic graft (35656) · General · 180 min · UMH Main OR");
     const text = packetText({ ...r, checklist: checklistFor(r, DEMO_CHART) }, DEMO_CHART);
     expect(text).toContain("CPT 35656");
     expect(text).toContain("Test Patient (demo) · MRN DEMO0001");

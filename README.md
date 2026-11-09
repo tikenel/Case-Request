@@ -187,6 +187,15 @@ app runs with AI off. Host the server under a BAA when AI is wanted.
 - Will it activate ServiceRequest.Create, or a case request API?
 - Should the app be an activity tab or a toolbar button, and for which roles?
 
+## Locations
+
+Cases can be booked at **UMH Main OR, Hybrid OR, Sole Mia, Lennar or Doral**.
+The list is in `shared/locations.ts`. Main OR procedures default to UMH Main
+OR and hybrid procedures to Hybrid OR. Angio/IR, office-lab and procedure-room
+cases have no default, so the clinician must pick the site before sending. The
+scheduler sheet shows the room type when the site name doesn't make it obvious
+("Doral · Angio/IR suite").
+
 ## Medications and medical history
 
 The patient's active medications, problem list and allergies come from the
