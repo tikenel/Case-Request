@@ -26,7 +26,7 @@ export type Category =
 
 /** Room type a procedure needs. Angio and catheter work is done in the Hybrid OR. */
 export type Setting = "Main OR" | "Hybrid OR";
-export type Anesthesia = "General" | "MAC/sedation" | "Regional" | "Local";
+export type Anesthesia = "General" | "MAC" | "Local/Sedation";
 export type Admission = "Outpatient" | "Overnight (23 h)" | "Inpatient" | "ICU";
 export type Blood = "None" | "Type & screen" | "Type & cross";
 
@@ -73,14 +73,14 @@ const BASE: Record<Category, Omit<Procedure, "id" | "cpt" | "name" | "category" 
   "Thoracic aorta": { sided: false, addOn: false, setting: "Hybrid OR", anesthesia: "General", minutes: 240, admission: "ICU", contrast: true, blood: "Type & cross", imaging: ["CTA chest/abdomen/pelvis with thin cuts"], equipment: ["Fixed imaging", "Thoracic endograft (sized from CTA)", "Large-bore sheaths", "Spinal drain availability (discuss with anesthesia)"], vendor: true },
   "Carotid & arch vessels": { sided: true, addOn: false, setting: "Main OR", anesthesia: "General", minutes: 150, admission: "Overnight (23 h)", contrast: false, blood: "Type & screen", imaging: ["Carotid duplex", "CTA or MRA neck"], equipment: ["Shunt available", "Patch (bovine pericardium or Dacron)", "Neuro-monitoring (EEG) if surgeon uses it"], vendor: false },
   "Lower extremity – open": { sided: true, addOn: false, setting: "Main OR", anesthesia: "General", minutes: 240, admission: "Inpatient", contrast: false, blood: "Type & screen", imaging: ["Arterial duplex or angiogram/CTA runoff", "ABI/PVR"], equipment: ["C-arm for completion angiogram"], vendor: false },
-  "Lower extremity – endovascular": { sided: true, addOn: false, setting: "Hybrid OR", anesthesia: "MAC/sedation", minutes: 120, admission: "Outpatient", contrast: true, blood: "None", imaging: ["ABI/PVR", "Arterial duplex or CTA runoff"], equipment: ["Fluoroscopy", "Balloons, stents and wires per surgeon preference"], vendor: false, verify: LER_2026 },
-  "Angiography & catheter work": { sided: false, addOn: false, setting: "Hybrid OR", anesthesia: "MAC/sedation", minutes: 60, admission: "Outpatient", contrast: true, blood: "None", imaging: [], equipment: ["Fluoroscopy"], vendor: false },
+  "Lower extremity – endovascular": { sided: true, addOn: false, setting: "Hybrid OR", anesthesia: "MAC", minutes: 120, admission: "Outpatient", contrast: true, blood: "None", imaging: ["ABI/PVR", "Arterial duplex or CTA runoff"], equipment: ["Fluoroscopy", "Balloons, stents and wires per surgeon preference"], vendor: false, verify: LER_2026 },
+  "Angiography & catheter work": { sided: false, addOn: false, setting: "Hybrid OR", anesthesia: "MAC", minutes: 60, admission: "Outpatient", contrast: true, blood: "None", imaging: [], equipment: ["Fluoroscopy"], vendor: false },
   "Visceral & renal": { sided: false, addOn: false, setting: "Hybrid OR", anesthesia: "General", minutes: 150, admission: "Inpatient", contrast: true, blood: "Type & screen", imaging: ["CTA abdomen with mesenteric/renal protocol"], equipment: ["Fluoroscopy", "Balloon-expandable covered stents per surgeon preference"], vendor: false },
   "Thrombus & embolism": { sided: true, addOn: false, setting: "Hybrid OR", anesthesia: "General", minutes: 120, admission: "Inpatient", contrast: true, blood: "Type & screen", imaging: ["Arterial or venous duplex, or CTA"], equipment: ["Fluoroscopy", "Fogarty embolectomy catheters", "Mechanical thrombectomy system per surgeon preference"], vendor: false },
-  "Dialysis access – open": { sided: true, addOn: false, setting: "Main OR", anesthesia: "Regional", minutes: 90, admission: "Outpatient", contrast: false, blood: "None", imaging: ["Vein mapping (upper-extremity duplex)"], equipment: ["Ultrasound in room"], vendor: false },
-  "Dialysis access – endovascular": { sided: true, addOn: false, setting: "Hybrid OR", anesthesia: "MAC/sedation", minutes: 60, admission: "Outpatient", contrast: true, blood: "None", imaging: ["Fistula/graft duplex if available"], equipment: ["Fluoroscopy", "High-pressure balloons"], vendor: false },
-  "Central lines & catheters": { sided: true, addOn: false, setting: "Hybrid OR", anesthesia: "MAC/sedation", minutes: 45, admission: "Outpatient", contrast: false, blood: "None", imaging: [], equipment: ["Fluoroscopy", "Ultrasound"], vendor: false },
-  "Venous": { sided: true, addOn: false, setting: "Hybrid OR", anesthesia: "Local", minutes: 60, admission: "Outpatient", contrast: false, blood: "None", imaging: ["Venous reflux duplex (standing) within payer window"], equipment: ["Ultrasound"], vendor: false },
+  "Dialysis access – open": { sided: true, addOn: false, setting: "Main OR", anesthesia: "MAC", minutes: 90, admission: "Outpatient", contrast: false, blood: "None", imaging: ["Vein mapping (upper-extremity duplex)"], equipment: ["Ultrasound in room"], vendor: false },
+  "Dialysis access – endovascular": { sided: true, addOn: false, setting: "Hybrid OR", anesthesia: "MAC", minutes: 60, admission: "Outpatient", contrast: true, blood: "None", imaging: ["Fistula/graft duplex if available"], equipment: ["Fluoroscopy", "High-pressure balloons"], vendor: false },
+  "Central lines & catheters": { sided: true, addOn: false, setting: "Hybrid OR", anesthesia: "MAC", minutes: 45, admission: "Outpatient", contrast: false, blood: "None", imaging: [], equipment: ["Fluoroscopy", "Ultrasound"], vendor: false },
+  "Venous": { sided: true, addOn: false, setting: "Hybrid OR", anesthesia: "Local/Sedation", minutes: 60, admission: "Outpatient", contrast: false, blood: "None", imaging: ["Venous reflux duplex (standing) within payer window"], equipment: ["Ultrasound"], vendor: false },
   "Thoracic outlet": { sided: true, addOn: false, setting: "Main OR", anesthesia: "General", minutes: 180, admission: "Inpatient", contrast: false, blood: "Type & screen", imaging: ["Chest X-ray (cervical rib)", "Positional duplex or venogram/arteriogram as indicated"], equipment: ["Rib instruments (rib shears, rongeurs)"], vendor: false },
   "Amputation & wound": { sided: true, addOn: false, setting: "Main OR", anesthesia: "General", minutes: 90, admission: "Inpatient", contrast: false, blood: "Type & screen", imaging: ["Arterial perfusion assessment (ABI/TBI or angiogram)"], equipment: ["Power saw"], vendor: false },
   "Other vascular": { sided: false, addOn: false, setting: "Main OR", anesthesia: "General", minutes: 120, admission: "Inpatient", contrast: false, blood: "Type & screen", imaging: [], equipment: [], vendor: false },
@@ -171,9 +171,9 @@ export const CATALOG: Procedure[] = [
 
   // ── Carotid and arch vessels ──────────────────────────────────────────
   car("35301", "Carotid endarterectomy", ["cea", "carotid endarterectomy", "carotid tea", "carotid cleanout", "endarterectomy carotid"]),
-  car("37215", "Carotid artery stent with embolic protection", ["cas", "carotid stent", "transfemoral carotid stent", "tf-cas"], { setting: "Hybrid OR", anesthesia: "MAC/sedation", minutes: 90, contrast: true, equipment: ["Fluoroscopy", "Embolic protection device", "Carotid stent"], vendor: true }),
+  car("37215", "Carotid artery stent with embolic protection", ["cas", "carotid stent", "transfemoral carotid stent", "tf-cas"], { setting: "Hybrid OR", anesthesia: "MAC", minutes: 90, contrast: true, equipment: ["Fluoroscopy", "Embolic protection device", "Carotid stent"], vendor: true }),
   car("37215", "TCAR (transcarotid artery revascularization with flow reversal)", ["tcar", "transcarotid", "enroute", "flow reversal carotid stent", "silk road"], { id: "37215-tcar", setting: "Hybrid OR", minutes: 90, contrast: true, equipment: ["Fluoroscopy", "ENROUTE flow-reversal system and stent"], vendor: true, verify: "TCAR is reported with the carotid stent code family. Confirm with the coding team." }),
-  car("37216", "Carotid artery stent without embolic protection", ["carotid stent no protection"], { setting: "Hybrid OR", anesthesia: "MAC/sedation", minutes: 90, contrast: true, equipment: ["Fluoroscopy", "Carotid stent"], vendor: true }),
+  car("37216", "Carotid artery stent without embolic protection", ["carotid stent no protection"], { setting: "Hybrid OR", anesthesia: "MAC", minutes: 90, contrast: true, equipment: ["Fluoroscopy", "Carotid stent"], vendor: true }),
   car("35601", "Carotid bypass with prosthetic graft", ["carotid bypass", "carotid interposition graft"]),
   car("35606", "Carotid-subclavian bypass with prosthetic graft", ["carotid subclavian bypass", "carotid-subclavian bypass", "cs bypass"], { minutes: 150 }),
   car("35694", "Subclavian-to-carotid transposition", ["subclavian carotid transposition", "subclavian transposition"], { minutes: 150 }),
@@ -231,7 +231,7 @@ export const CATALOG: Procedure[] = [
   ang("36247", "Selective catheter, third-order or beyond abdominal/pelvic/leg artery", ["selective third order", "tibial selective"], { sided: true }),
   ang("37252", "Intravascular ultrasound (IVUS), first vessel", ["ivus", "intravascular ultrasound"], { ...ADD, vendor: true }),
   ang("37253", "Intravascular ultrasound (IVUS), each additional vessel", ["additional ivus"], { ...ADD, vendor: true }),
-  ang("36002", "Ultrasound-guided thrombin injection of pseudoaneurysm", ["thrombin injection", "pseudoaneurysm injection", "femoral pseudoaneurysm thrombin"], { sided: true, setting: "Hybrid OR", anesthesia: "Local", minutes: 30, contrast: false, equipment: ["Ultrasound", "Thrombin"] }),
+  ang("36002", "Ultrasound-guided thrombin injection of pseudoaneurysm", ["thrombin injection", "pseudoaneurysm injection", "femoral pseudoaneurysm thrombin"], { sided: true, setting: "Hybrid OR", anesthesia: "Local/Sedation", minutes: 30, contrast: false, equipment: ["Ultrasound", "Thrombin"] }),
   ang("37242", "Arterial embolization (not for hemorrhage or tumor)", ["arterial embolization", "endoleak embolization", "aneurysm embolization", "coil embolization artery", "type 2 endoleak embolization"], { minutes: 120, vendor: true }),
   ang("37243", "Embolization for tumor, organ ischemia or infarction", ["tumor embolization", "organ embolization"], { minutes: 120 }),
   ang("37244", "Embolization for hemorrhage or lymphatic leak", ["bleeding embolization", "hemorrhage embolization", "lymphatic embolization"], { minutes: 120 }),
@@ -247,17 +247,17 @@ export const CATALOG: Procedure[] = [
   // ── Thrombus and embolism ─────────────────────────────────────────────
   thr("34201", "Femoral or popliteal embolectomy/thrombectomy through a groin incision", ["femoral embolectomy", "fogarty embolectomy", "leg embolectomy", "acute limb ischemia embolectomy", "ali thrombectomy groin"]),
   thr("34203", "Popliteal-tibial embolectomy/thrombectomy through a leg incision", ["popliteal embolectomy", "below knee embolectomy", "tibial embolectomy"]),
-  thr("34101", "Axillary, brachial or subclavian embolectomy through an arm incision", ["brachial embolectomy", "arm embolectomy", "upper extremity embolectomy"], { anesthesia: "MAC/sedation", minutes: 90 }),
-  thr("34111", "Radial or ulnar embolectomy through an arm incision", ["radial embolectomy", "ulnar embolectomy"], { anesthesia: "MAC/sedation", minutes: 90 }),
-  thr("37184", "Percutaneous mechanical arterial thrombectomy, first vessel", ["mechanical thrombectomy artery", "penumbra artery", "lightning", "angiojet artery", "aspiration thrombectomy artery"], { setting: "Hybrid OR", anesthesia: "MAC/sedation", vendor: true }),
+  thr("34101", "Axillary, brachial or subclavian embolectomy through an arm incision", ["brachial embolectomy", "arm embolectomy", "upper extremity embolectomy"], { anesthesia: "MAC", minutes: 90 }),
+  thr("34111", "Radial or ulnar embolectomy through an arm incision", ["radial embolectomy", "ulnar embolectomy"], { anesthesia: "MAC", minutes: 90 }),
+  thr("37184", "Percutaneous mechanical arterial thrombectomy, first vessel", ["mechanical thrombectomy artery", "penumbra artery", "lightning", "angiojet artery", "aspiration thrombectomy artery"], { setting: "Hybrid OR", anesthesia: "MAC", vendor: true }),
   thr("37185", "Percutaneous mechanical arterial thrombectomy, each additional vessel", ["additional arterial thrombectomy"], { ...ADD, vendor: true }),
   thr("37186", "Secondary mechanical thrombectomy during another endovascular procedure", ["secondary thrombectomy", "distal embolus aspiration"], ADD),
-  thr("37187", "Percutaneous mechanical venous thrombectomy", ["venous thrombectomy", "dvt thrombectomy", "clottriever", "clot triever", "angiojet vein", "iliofemoral dvt thrombectomy", "mechanical thrombectomy dvt"], { setting: "Hybrid OR", anesthesia: "MAC/sedation", minutes: 120, vendor: true, imaging: ["Venous duplex or CT venogram"] }),
-  thr("37188", "Repeat mechanical venous thrombectomy on a later day", ["repeat venous thrombectomy"], { setting: "Hybrid OR", anesthesia: "MAC/sedation", minutes: 90 }),
-  thr("37211", "Catheter-directed arterial thrombolysis, first day", ["arterial thrombolysis", "cdt artery", "tpa infusion artery", "lysis catheter artery"], { setting: "Hybrid OR", anesthesia: "MAC/sedation", admission: "ICU" }),
-  thr("37212", "Catheter-directed venous thrombolysis, first day", ["venous thrombolysis", "cdt dvt", "catheter directed thrombolysis vein", "ekos", "paget schroetter lysis"], { setting: "Hybrid OR", anesthesia: "MAC/sedation", admission: "ICU", imaging: ["Venous duplex or CT venogram"] }),
-  thr("37213", "Thrombolysis, later day (with or without stopping)", ["lysis check", "lysis follow-up"], { setting: "Hybrid OR", anesthesia: "MAC/sedation", minutes: 60, admission: "ICU" }),
-  thr("37214", "Thrombolysis, final day with cessation", ["stop lysis", "lysis completion"], { setting: "Hybrid OR", anesthesia: "MAC/sedation", minutes: 60, admission: "ICU" }),
+  thr("37187", "Percutaneous mechanical venous thrombectomy", ["venous thrombectomy", "dvt thrombectomy", "clottriever", "clot triever", "angiojet vein", "iliofemoral dvt thrombectomy", "mechanical thrombectomy dvt"], { setting: "Hybrid OR", anesthesia: "MAC", minutes: 120, vendor: true, imaging: ["Venous duplex or CT venogram"] }),
+  thr("37188", "Repeat mechanical venous thrombectomy on a later day", ["repeat venous thrombectomy"], { setting: "Hybrid OR", anesthesia: "MAC", minutes: 90 }),
+  thr("37211", "Catheter-directed arterial thrombolysis, first day", ["arterial thrombolysis", "cdt artery", "tpa infusion artery", "lysis catheter artery"], { setting: "Hybrid OR", anesthesia: "MAC", admission: "ICU" }),
+  thr("37212", "Catheter-directed venous thrombolysis, first day", ["venous thrombolysis", "cdt dvt", "catheter directed thrombolysis vein", "ekos", "paget schroetter lysis"], { setting: "Hybrid OR", anesthesia: "MAC", admission: "ICU", imaging: ["Venous duplex or CT venogram"] }),
+  thr("37213", "Thrombolysis, later day (with or without stopping)", ["lysis check", "lysis follow-up"], { setting: "Hybrid OR", anesthesia: "MAC", minutes: 60, admission: "ICU" }),
+  thr("37214", "Thrombolysis, final day with cessation", ["stop lysis", "lysis completion"], { setting: "Hybrid OR", anesthesia: "MAC", minutes: 60, admission: "ICU" }),
   thr("34421", "Open venous thrombectomy, iliac/femoral/popliteal, through a leg incision", ["open venous thrombectomy", "iliofemoral venous thrombectomy open"], { minutes: 180 }),
   thr("27602", "Fasciotomy of the leg, anterior/lateral and posterior compartments", ["four compartment fasciotomy", "4 compartment fasciotomy", "leg fasciotomy", "fasciotomy"], { setting: "Main OR", contrast: false, minutes: 60, equipment: [] }),
 
@@ -290,10 +290,10 @@ export const CATALOG: Procedure[] = [
 
   // ── Central lines and catheters ───────────────────────────────────────
   cvc("36558", "Tunneled central venous catheter without port (age 5+), e.g. dialysis catheter", ["tunneled dialysis catheter", "tdc", "permcath", "hd catheter", "tunneled line", "palindrome", "tunneled cvc"]),
-  cvc("36589", "Removal of tunneled central venous catheter without port", ["tdc removal", "permcath removal", "tunneled catheter removal"], { anesthesia: "Local", minutes: 30, equipment: [] }),
+  cvc("36589", "Removal of tunneled central venous catheter without port", ["tdc removal", "permcath removal", "tunneled catheter removal"], { anesthesia: "Local/Sedation", minutes: 30, equipment: [] }),
   cvc("36581", "Exchange of tunneled catheter without port, through the same access", ["tdc exchange", "catheter exchange"], { minutes: 30 }),
   cvc("36561", "Port placement (tunneled central catheter with subcutaneous port, age 5+)", ["port", "mediport", "port-a-cath", "chemo port", "portacath"]),
-  cvc("36590", "Port removal", ["port removal", "mediport removal"], { anesthesia: "Local", minutes: 30, equipment: [] }),
+  cvc("36590", "Port removal", ["port removal", "mediport removal"], { anesthesia: "Local/Sedation", minutes: 30, equipment: [] }),
 
   // ── Venous ────────────────────────────────────────────────────────────
   ven("36475", "Radiofrequency ablation of a truncal vein, first vein", ["rfa", "radiofrequency ablation", "venefit", "closurefast", "gsv ablation", "ssv ablation", "saphenous ablation", "vein ablation", "endovenous ablation"], { equipment: ["Ultrasound", "RF generator and catheter"] }),
@@ -310,17 +310,17 @@ export const CATALOG: Procedure[] = [
   ven("37766", "Stab phlebectomy, more than 20 incisions in one leg", ["extensive phlebectomy"], { minutes: 90 }),
   ven("37722", "Ligation, division and stripping of the great saphenous vein", ["vein stripping", "gsv stripping", "high ligation and stripping"], { setting: "Main OR", anesthesia: "General", minutes: 90 }),
   ven("37718", "Ligation, division and stripping of the small saphenous vein", ["ssv stripping"], { setting: "Main OR", anesthesia: "General", minutes: 90 }),
-  ven("37191", "IVC filter placement", ["ivc filter", "vena cava filter", "greenfield filter", "filter placement"], { sided: false, setting: "Hybrid OR", anesthesia: "MAC/sedation", minutes: 45, contrast: true, imaging: [], equipment: ["Fluoroscopy", "IVC filter"] }),
-  ven("37192", "IVC filter repositioning", ["filter repositioning"], { sided: false, setting: "Hybrid OR", anesthesia: "MAC/sedation", minutes: 60, contrast: true, imaging: [] }),
-  ven("37193", "IVC filter retrieval", ["ivc filter removal", "filter retrieval", "filter removal"], { sided: false, setting: "Hybrid OR", anesthesia: "MAC/sedation", minutes: 60, contrast: true, imaging: ["CT abdomen if filter tilted or embedded"], equipment: ["Fluoroscopy", "Snares and retrieval kit", "Forceps for complex retrieval"] }),
-  ven("37238", "Venous stent, first vein (e.g., iliac vein stent for May-Thurner)", ["iliac vein stent", "may thurner stent", "venous stent", "vici", "abre", "venovo", "nicv", "iliocaval stent"], { setting: "Hybrid OR", anesthesia: "MAC/sedation", minutes: 120, contrast: true, vendor: true, imaging: ["Venous duplex", "CT or MR venogram"], equipment: ["Fluoroscopy", "IVUS", "Dedicated venous stents"] }),
+  ven("37191", "IVC filter placement", ["ivc filter", "vena cava filter", "greenfield filter", "filter placement"], { sided: false, setting: "Hybrid OR", anesthesia: "MAC", minutes: 45, contrast: true, imaging: [], equipment: ["Fluoroscopy", "IVC filter"] }),
+  ven("37192", "IVC filter repositioning", ["filter repositioning"], { sided: false, setting: "Hybrid OR", anesthesia: "MAC", minutes: 60, contrast: true, imaging: [] }),
+  ven("37193", "IVC filter retrieval", ["ivc filter removal", "filter retrieval", "filter removal"], { sided: false, setting: "Hybrid OR", anesthesia: "MAC", minutes: 60, contrast: true, imaging: ["CT abdomen if filter tilted or embedded"], equipment: ["Fluoroscopy", "Snares and retrieval kit", "Forceps for complex retrieval"] }),
+  ven("37238", "Venous stent, first vein (e.g., iliac vein stent for May-Thurner)", ["iliac vein stent", "may thurner stent", "venous stent", "vici", "abre", "venovo", "nicv", "iliocaval stent"], { setting: "Hybrid OR", anesthesia: "MAC", minutes: 120, contrast: true, vendor: true, imaging: ["Venous duplex", "CT or MR venogram"], equipment: ["Fluoroscopy", "IVUS", "Dedicated venous stents"] }),
   ven("37239", "Venous stent, each additional vein", ["additional venous stent"], { ...ADD, contrast: true }),
-  ven("37248", "Venous angioplasty, first vein", ["venoplasty", "venous angioplasty", "vein balloon"], { setting: "Hybrid OR", anesthesia: "MAC/sedation", contrast: true }),
+  ven("37248", "Venous angioplasty, first vein", ["venoplasty", "venous angioplasty", "vein balloon"], { setting: "Hybrid OR", anesthesia: "MAC", contrast: true }),
   ven("37249", "Venous angioplasty, each additional vein", ["additional venoplasty"], { ...ADD, contrast: true }),
-  ven("37241", "Venous embolization (not for hemorrhage), e.g., pelvic or gonadal vein", ["ovarian vein embolization", "gonadal vein embolization", "pelvic congestion embolization", "varicocele embolization"], { sided: false, setting: "Hybrid OR", anesthesia: "MAC/sedation", minutes: 90, contrast: true }),
-  ven("75820", "Venogram of one extremity (supervision and interpretation)", ["venogram", "leg venogram", "arm venogram"], { setting: "Hybrid OR", anesthesia: "MAC/sedation", contrast: true }),
-  ven("75822", "Venogram of both extremities (supervision and interpretation)", ["bilateral venogram"], { sided: false, setting: "Hybrid OR", anesthesia: "MAC/sedation", contrast: true }),
-  ven("75825", "Inferior vena cavogram (supervision and interpretation)", ["cavogram", "ivc venogram"], { sided: false, setting: "Hybrid OR", anesthesia: "MAC/sedation", contrast: true }),
+  ven("37241", "Venous embolization (not for hemorrhage), e.g., pelvic or gonadal vein", ["ovarian vein embolization", "gonadal vein embolization", "pelvic congestion embolization", "varicocele embolization"], { sided: false, setting: "Hybrid OR", anesthesia: "MAC", minutes: 90, contrast: true }),
+  ven("75820", "Venogram of one extremity (supervision and interpretation)", ["venogram", "leg venogram", "arm venogram"], { setting: "Hybrid OR", anesthesia: "MAC", contrast: true }),
+  ven("75822", "Venogram of both extremities (supervision and interpretation)", ["bilateral venogram"], { sided: false, setting: "Hybrid OR", anesthesia: "MAC", contrast: true }),
+  ven("75825", "Inferior vena cavogram (supervision and interpretation)", ["cavogram", "ivc venogram"], { sided: false, setting: "Hybrid OR", anesthesia: "MAC", contrast: true }),
 
   // ── Thoracic outlet ───────────────────────────────────────────────────
   tos("21615", "First rib and/or cervical rib resection", ["first rib resection", "frr", "tos decompression", "thoracic outlet decompression", "transaxillary rib resection", "supraclavicular decompression", "cervical rib resection", "paget schroetter surgery", "vtos surgery", "ntos surgery"]),
@@ -337,9 +337,9 @@ export const CATALOG: Procedure[] = [
   amp("28800", "Midfoot amputation (Chopart/Lisfranc)", ["chopart", "lisfranc amputation", "midfoot amputation"]),
   amp("28805", "Transmetatarsal amputation", ["tma", "transmetatarsal amputation", "forefoot amputation"]),
   amp("28810", "Ray amputation (single metatarsal with toe)", ["ray amputation", "ray resection", "partial ray"], { minutes: 60 }),
-  amp("28820", "Toe amputation at the MTP joint", ["toe amputation", "toe amp mtp"], { minutes: 45, anesthesia: "MAC/sedation" }),
-  amp("28825", "Toe amputation at the IP joint", ["partial toe amputation", "toe tip amputation"], { minutes: 45, anesthesia: "MAC/sedation" }),
-  amp("11042", "Debridement to subcutaneous tissue, first 20 sq cm", ["debridement", "wound debridement", "i&d wound", "subcutaneous debridement"], { minutes: 45, anesthesia: "MAC/sedation", equipment: [] }),
+  amp("28820", "Toe amputation at the MTP joint", ["toe amputation", "toe amp mtp"], { minutes: 45, anesthesia: "MAC" }),
+  amp("28825", "Toe amputation at the IP joint", ["partial toe amputation", "toe tip amputation"], { minutes: 45, anesthesia: "MAC" }),
+  amp("11042", "Debridement to subcutaneous tissue, first 20 sq cm", ["debridement", "wound debridement", "i&d wound", "subcutaneous debridement"], { minutes: 45, anesthesia: "MAC", equipment: [] }),
   amp("11043", "Debridement to muscle/fascia, first 20 sq cm", ["muscle debridement", "fascial debridement", "deep debridement"], { minutes: 60, equipment: [] }),
   amp("11044", "Debridement to bone, first 20 sq cm", ["bone debridement", "osteomyelitis debridement"], { minutes: 60, equipment: ["Rongeurs"] }),
   amp("97605", "Negative-pressure wound therapy (VAC), 50 sq cm or less", ["wound vac", "npwt", "vac placement"], { ...ADD, equipment: ["Wound VAC"] }),
@@ -349,7 +349,7 @@ export const CATALOG: Procedure[] = [
   oth("35860", "Exploration for postoperative bleeding, thrombosis or infection, extremity", ["groin exploration", "wound exploration bleeding", "hematoma evacuation extremity", "return to or groin"], { sided: true, minutes: 60 }),
   oth("35800", "Exploration for postoperative bleeding, thrombosis or infection, neck", ["neck exploration", "neck hematoma evacuation", "post cea hematoma"], { minutes: 60 }),
   oth("35840", "Exploration for postoperative bleeding, thrombosis or infection, abdomen", ["abdominal exploration bleeding", "re-look laparotomy vascular"], { minutes: 120, admission: "ICU" }),
-  oth("37609", "Temporal artery biopsy", ["temporal artery biopsy", "tab", "giant cell arteritis biopsy"], { sided: true, setting: "Hybrid OR", anesthesia: "Local", minutes: 45, admission: "Outpatient", blood: "None", verify: "Pathology must know it is a temporal artery specimen (GCA protocol)." }),
+  oth("37609", "Temporal artery biopsy", ["temporal artery biopsy", "tab", "giant cell arteritis biopsy"], { sided: true, setting: "Hybrid OR", anesthesia: "Local/Sedation", minutes: 45, admission: "Outpatient", blood: "None", verify: "Pathology must know it is a temporal artery specimen (GCA protocol)." }),
 ];
 
 const BY_ID = new Map(CATALOG.map((p) => [p.id, p]));

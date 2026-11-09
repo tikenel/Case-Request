@@ -25,7 +25,7 @@ describe("booking defaults", () => {
     expect(two.setting).toBe("Hybrid OR"); // the iliac stent needs imaging, so the Hybrid OR wins
   });
   it("lets the clinician override defaults", () => {
-    expect(booking(base({ minutes: 240, anesthesia: "Regional" }))).toMatchObject({ minutes: 240, anesthesia: "Regional", setting: "Main OR", location: "UMH Main OR" });
+    expect(booking(base({ minutes: 240, anesthesia: "MAC" }))).toMatchObject({ minutes: 240, anesthesia: "MAC", setting: "Main OR", location: "UMH Main OR" });
   });
 });
 

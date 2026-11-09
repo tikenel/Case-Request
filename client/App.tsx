@@ -539,7 +539,7 @@ function Booking({ req, set, team, chart }: { req: SurgeryRequest; set: Setter; 
             {LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
           </select>
         </div>
-        {pick<Anesthesia>("Anesthesia", "anesthesia", ["General", "MAC/sedation", "Regional", "Local"], b.anesthesia)}
+        {pick<Anesthesia>("Anesthesia", "anesthesia", ["General", "MAC", "Local/Sedation"], b.anesthesia)}
         {pick<Admission>("After surgery", "admission", ["Outpatient", "Overnight (23 h)", "Inpatient", "ICU"], b.admission)}
         <div className="field">
           <label>Minutes to book</label>

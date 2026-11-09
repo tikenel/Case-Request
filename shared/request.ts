@@ -66,7 +66,7 @@ export function emptyRequest(user: string | null): SurgeryRequest {
 }
 
 const SETTING_RANK: Setting[] = ["Main OR", "Hybrid OR"];
-const ANES_RANK: Anesthesia[] = ["Local", "MAC/sedation", "Regional", "General"];
+const ANES_RANK: Anesthesia[] = ["Local/Sedation", "MAC", "General"];
 const ADMIT_RANK: Admission[] = ["Outpatient", "Overnight (23 h)", "Inpatient", "ICU"];
 const BLOOD_RANK: Blood[] = ["None", "Type & screen", "Type & cross"];
 const top = <T>(rank: T[], vals: T[], fallback: T) => vals.reduce((a, b) => (rank.indexOf(b) > rank.indexOf(a) ? b : a), fallback);
@@ -95,7 +95,7 @@ export function derive(req: Pick<SurgeryRequest, "procedures">): Derived {
   return {
     procedures: procs,
     setting: top(SETTING_RANK, procs.map((p) => p.setting), "Main OR"),
-    anesthesia: top(ANES_RANK, procs.map((p) => p.anesthesia), "Local"),
+    anesthesia: top(ANES_RANK, procs.map((p) => p.anesthesia), "Local/Sedation"),
     minutes: bookingMinutes(primaries, procs.length - primaries.length),
     admission: top(ADMIT_RANK, procs.map((p) => p.admission), "Outpatient"),
     blood: top(BLOOD_RANK, procs.map((p) => p.blood), "None"),
@@ -137,7 +137,7 @@ export function checklistFor(req: SurgeryRequest, chart: ChartSummary | null): C
   // Anticoagulant, antiplatelet and kidney-risk decisions live in req.medPlans, not here.
   if (req.medPlans.some((p) => p.cls === "anticoagulant" && p.action === "hold")) add("bridging", "Bridging decided (needed or not)", "An anticoagulant is being held.");
   if (named("sglt2")) add("sglt2", "SGLT2 inhibitor hold instructions", `On ${named("sglt2")}. Usually held before surgery to avoid ketoacidosis; confirm timing with anesthesia.`);
-  if (named("glp1") && b.anesthesia !== "Local") add("glp1", "GLP-1 agonist: flag for anesthesia review", `On ${named("glp1")}. Delayed gastric emptying affects anesthesia plans.`);
+  if (named("glp1") && b.anesthesia !== "Local/Sedation") add("glp1", "GLP-1 agonist: flag for anesthesia review", `On ${named("glp1")}. Delayed gastric emptying affects anesthesia plans.`);
   if (named("insulin") || named("metformin")) add("diabetes", "Diabetes medication instructions for the day of surgery", `On ${[named("insulin"), named("metformin")].filter(Boolean).join(", ")}.`);
   if (b.contrast) {
     const egfr = chart?.labs.egfr?.value;
@@ -146,7 +146,7 @@ export function checklistFor(req: SurgeryRequest, chart: ChartSummary | null): C
     if (chart?.allergies.some((a) => a.contrast)) add("contrast-allergy", "Contrast allergy premedication protocol ordered", `Allergy on file: ${chart.allergies.filter((a) => a.contrast).map((a) => a.display).join(", ")}.`);
   }
   if (chart?.allergyStatus === "not on file") add("allergy-history", "Allergy history taken and entered in the chart", "The chart says allergies are not on file.");
-  if (b.anesthesia === "General" || b.anesthesia === "Regional") add("anesthesia", "Pre-anesthesia evaluation booked", `${b.anesthesia} anesthesia.`);
+  if (b.anesthesia === "General" || b.anesthesia === "MAC") add("anesthesia", "Pre-anesthesia evaluation booked", `${b.anesthesia} anesthesia.`);
   if (b.admission === "Inpatient" || b.admission === "ICU") add("medical", "Medical/cardiac risk assessment if indicated", `${b.admission} case.`);
   if (b.blood !== "None") add("blood", `${b.blood} within the blood bank window`, "Blood bank sample usually expires 72 h before the case.");
   if (b.admission === "ICU") add("icu-bed", "ICU bed requested for after surgery", "Post-op ICU stay expected.");
